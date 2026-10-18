@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mahjong Table</title>
+<link rel="stylesheet" href="../../shared/cards.css">
+<style>
+  :root { --tw: min(6.2vw, 44px); --sw: min(3.2vw, 22px); --felt: #0b5a45; }
+  #app { max-width: 980px; margin: 0 auto; padding: 10px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+  header h1 { font-size: 20px; margin: 0 auto 0 0; }
+  #info { font-size: 14px; opacity: .92; width: 100%; }
+  #msg { min-height: 24px; font-size: 15px; margin: 4px 0; }
+  #msg b { color: #ffd54a; }
+  .tile { width: var(--tw); height: calc(var(--tw) * 1.3); border-radius: 5px; padding: 3px 4px; flex: none;
+          background: linear-gradient(145deg, #fffdf4, #ece4cb);
+          box-shadow: 1px 1px 0 #cdbf92, 2px 2px 0 #b3a477, 2px 3px 4px rgba(0,0,0,.4); }
+  .tile svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+  .tile.sm { width: var(--sw); height: calc(var(--sw) * 1.3); padding: 1px 2px; border-radius: 3px; box-shadow: 1px 1px 0 #b3a477; }
+  .tile.back { background: repeating-linear-gradient(45deg, #1d6f55 0 5px, #25825f 5px 10px); box-shadow: 1px 1px 0 #0a3d2e, 2px 2px 3px rgba(0,0,0,.4); }
+  .tile.last { outline: 2px solid #ffd54a; }
+  .tile.pick { cursor: pointer; }
+  .tile.pick:hover { transform: translateY(-6px); }
+  .tile.drawn { margin-left: calc(var(--tw) * .4); }
+  .row { display: flex; flex-wrap: wrap; gap: 2px; align-items: flex-end; }
+  .seat { background: rgba(0,0,0,.2); border-radius: 8px; padding: 6px 8px; min-height: 50px; }
+  .seat h3 { margin: 0 0 4px; font-size: 13px; font-weight: normal; }
+  .seat h3 b { color: #ffd54a; }
+  .melds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .meld { display: flex; gap: 1px; }
+  #mid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 8px; margin: 8px 0; }
+  #pool { background: rgba(0,0,0,.15); border-radius: 8px; padding: 6px; display: grid; gap: 4px; align-content: start; }
+  #pool .row small { opacity: .7; width: 52px; font-size: 11px; align-self: center; }
+  #me { margin-top: 6px; }
+  #actions { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; margin: 8px 0; }
+  #actions button { font-size: 16px; padding: 8px 16px; }
+  #actions button.win { background: #ffd54a; border-color: #b8860b; font-weight: bold; }
+  #over { position: fixed; inset: 0; display: none; place-items: center; background: rgba(0,0,0,.65); z-index: 9999; overflow: auto; }
+  #over.show { display: grid; }
+  #over > div { background: #fff; color: #0a3a20; padding: 22px 30px; border-radius: 12px; max-width: 94vw; font-size: 16px; }
+  #over h2 { margin: 0 0 8px; }
+  #over table { border-collapse: collapse; margin: 8px 0; }
+  #over td { padding: 2px 10px; }
+  #over .reveal { display: grid; gap: 4px; margin: 8px 0; }
+  #over .reveal .row { background: #0b5a45; padding: 4px; border-radius: 6px; }
+  @media (max-width: 640px) { #mid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="back" href="../../">&larr; Games</a>
+    <h1>Mahjong Table</h1>
+    <label>Rules <select id="variant"></select></label>
+    <button id="new">New match</button>
+    <div id="info"></div>
+  </header>
+  <div id="msg"></div>
+  <div class="seat" id="s2"></div>
+  <div id="mid">
+    <div class="seat" id="s3"></div>
+    <div id="pool"></div>
+    <div class="seat" id="s1"></div>
+  </div>
+  <div id="actions"></div>
+  <div class="seat" id="me"></div>
+</div>
+<div id="over"><div id="overbox"></div></div>
+
+<script type="module">
+import { Match } from './engine/match.js';
+import { VARIANTS, PLANNED, DEFAULT_VARIANT } from './engine/rules/index.js';
+import { chooseDiscard, chooseSelf, chooseClaim } from './ai/robot.js';
+import { toFace, sortTiles, tileName, WINDS } from './engine/tiles.js';
+import { faceSvg } from '../mahjong/faces.js';
+import { rng } from '../../shared/rng.js';
+
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const FAST = qs.has('fast');
+const sleep = ms => FAST ? Promise.resolve() : new Promise(r => setTimeout(r, ms));
+const get = k => { try { return localStorage.getItem(k); } catch { return null; } };
+const set = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+const NAMES = ['You', 'Right', 'Across', 'Left'];
+const KEY = 'deckgames.mjtable.';
+
+let rules, match, round, runId = 0, wait = null, seedBase = qs.has('seed') ? +qs.get('seed') : null, handNo = 0;
+const stats = () => { try { return JSON.parse(get(KEY + 'stats')) || { hands: 0, wins: 0, net: 0 }; } catch { return { hands: 0, wins: 0, net: 0 }; } };
+
+function tileEl(t, cls = '') {
+  const d = document.createElement('div');
+  d.className = 'tile ' + cls;
+  if (t == null) d.classList.add('back'); else { d.innerHTML = faceSvg(toFace(t)); d.title = tileName(t); d.dataset.t = t; }
+  return d;
+}
+function meldEl(m, small = true) {
+  const d = document.createElement('div'); d.className = 'meld';
+  m.tiles.forEach((t, i) => d.appendChild(tileEl(!m.open && (m.type === 'kong') && (i === 0 || i === 3) ? null : t, small ? 'sm' : '')));
+  return d;
+}
+const seatLabel = s => `${NAMES[s]} <b>${WINDS[round.wind(s)]}</b>${s === round.dealer ? ' (dealer)' : ''} · ${match.scores[s] >= 0 ? '+' : ''}${match.scores[s]}`;
+
+function render(reveal = false) {
+  if (!round) return;
+  const roundName = ['East', 'South', 'West', 'North'][round.round];
+  const st = stats();
+  $('info').textContent = `${rules.name} · ${roundName} round · hand ${match.hand} · wall ${Math.max(0, round.liveLeft)} · lifetime: ${st.wins}/${st.hands} won, net ${st.net >= 0 ? '+' : ''}${st.net}`;
+  for (const s of [1, 2, 3]) {
+    const p = round.players[s], el = $('s' + s);
+    el.innerHTML = `<h3>${seatLabel(s)}${round.turn === s && round.phase !== 'over' ? ' ◀' : ''}</h3>`;
+    const row = document.createElement('div'); row.className = 'row';
+    p.hand.forEach(t => row.appendChild(tileEl(reveal ? t : null, 'sm')));
+    el.appendChild(row);
+    const melds = document.createElement('div'); melds.className = 'melds';
+    p.melds.forEach(m => melds.appendChild(meldEl(m)));
+    if (p.bonus.length) { const b = document.createElement('div'); b.className = 'meld'; p.bonus.forEach(t => b.appendChild(tileEl(t, 'sm'))); melds.appendChild(b); }
+    el.appendChild(melds);
+  }
+  const pool = $('pool'); pool.innerHTML = '';
+  for (const s of [2, 3, 1, 0]) {
+    const row = document.createElement('div'); row.className = 'row';
+    row.innerHTML = `<small>${NAMES[s]}</small>`;
+    round.players[s].discards.forEach((t, i, a) => {
+      const last = round.last && round.last.from === s && i === a.length - 1;
+      row.appendChild(tileEl(t, 'sm' + (last ? ' last' : '')));
+    });
+    pool.appendChild(row);
+  }
+  const me = $('me'), p = round.players[0];
+  me.innerHTML = `<h3>${seatLabel(0)}${round.turn === 0 && round.phase === 'discard' ? ' — your discard' : ''}</h3>`;
+  const row = document.createElement('div'); row.className = 'row'; row.id = 'hand';
+  const hand = sortTiles(p.hand);
+  let drawnSkipped = false;
+  const canPick = !!(wait && wait.kind === 'turn');
+  const order = [...hand];
+  if (round.drawn && round.turn === 0 && order.includes(round.drawn)) { order.splice(order.indexOf(round.drawn), 1); order.push(round.drawn); }
+  order.forEach((t, i) => {
+    const last = i === order.length - 1 && round.drawn && round.turn === 0 && t === round.drawn;
+    const el = tileEl(t, (canPick ? 'pick ' : '') + (last ? 'drawn' : ''));
+    if (canPick) el.onclick = () => wait.resolve({ discard: t });
+    row.appendChild(el);
+  });
+  me.appendChild(row);
+  const melds = document.createElement('div'); melds.className = 'melds';
+  p.melds.forEach(m => melds.appendChild(meldEl(m, false)));
+  if (p.bonus.length) { const b = document.createElement('div'); b.className = 'meld'; p.bonus.forEach(t => b.appendChild(tileEl(t, 'sm'))); melds.appendChild(b); }
+  me.appendChild(melds);
+}
+
+function say(html) { $('msg').innerHTML = html; }
+function actions(list) {
+  const box = $('actions'); box.innerHTML = '';
+  for (const a of list) {
+    const b = document.createElement('button'); b.textContent = a.label; if (a.cls) b.className = a.cls;
+    b.onclick = () => wait && wait.resolve(a.value); box.appendChild(b);
+  }
+}
+function ask(kind) { return new Promise(resolve => { wait = { kind, resolve: v => { wait = null; actions([]); resolve(v); } }; }); }
+
+async function humanTurn(my) {
+  for (;;) {
+    const o = round.selfOptions(), list = [];
+    if (o.win) list.push({ label: `Declare win (${o.win.faan} faan)`, value: { action: 'win' }, cls: 'win' });
+    for (const t of new Set([...o.concealedKongs, ...o.addKongs])) list.push({ label: `Kong ${tileName(t)}`, value: { action: 'kong', tile: t } });
+    actions(list); say('Your turn: click a tile to discard.');
+    const pr = ask('turn'); render();
+    const v = await pr;
+    if (my !== runId) return null;
+    if (v.action === 'win') { round.selfWin(); return 'over'; }
+    if (v.action === 'kong') { if (round.kong(v.tile) === null) return 'over'; render(); continue; }
+    return v.discard;
+  }
+}
+
+async function playMatchHand() {
+  const my = ++runId;
+  round = match.next(); handNo++;
+  render(); say(`New hand. You are ${WINDS[round.wind(0)]}.`);
+  await sleep(500);
+  while (round.phase !== 'over') {
+    if (my !== runId) return;
+    if (round.phase === 'draw') { if (round.draw() === null) break; render(); await sleep(250); }
+    const seat = round.turn;
+    let tile;
+    if (seat === 0) {
+      tile = await humanTurn(my);
+      if (my !== runId) return;
+      if (tile === 'over') break;
+    } else {
+      for (;;) {
+        const s = chooseSelf(round, seat);
+        if (!s) break;
+        if (s.action === 'win') { round.selfWin(); break; }
+        say(`${NAMES[seat]} declares a kong.`); if (round.kong(s.tile) === null) break; render(); await sleep(500);
+      }
+      if (round.phase === 'over') break;
+      tile = chooseDiscard(round, seat);
+    }
+    const opts = round.discard(tile); render();
+    say(`${NAMES[seat]} discards <b>${tileName(tile)}</b>.`);
+    await sleep(450);
+    const dec = {};
+    for (const [st, o] of Object.entries(opts)) {
+      const s = +st;
+      if (s === 0) {
+        const list = [];
+        if (o.win) list.push({ label: 'Win!', value: { action: 'win' }, cls: 'win' });
+        if (o.kong) list.push({ label: 'Kong', value: { action: 'kong' } });
+        if (o.pung) list.push({ label: 'Pung', value: { action: 'pung' } });
+        o.chows.forEach(u => list.push({ label: 'Chow ' + [u[0][1], u[1][1], tile[1]].sort().join('-'), value: { action: 'chow', use: u } }));
+        list.push({ label: 'Pass', value: { action: 'pass' } });
+        actions(list); say(`${NAMES[seat]} discarded <b>${tileName(tile)}</b>. Claim it?`);
+        const pr = ask('claim'); dec[0] = await pr;
+        if (my !== runId) return;
+      } else dec[s] = chooseClaim(round, s, o);
+    }
+    const res = round.resolve(dec);
+    if (res.type !== 'none') { say(res.type === 'win' ? 'Mahjong!' : `${NAMES[round.turn]} claims with a ${res.type}.`); render(); await sleep(600); }
+    if (res.type === 'win' || (res.type === 'kong' && res.next === null)) break;
+  }
+  finishHand();
+}
+
+function finishHand() {
+  const r = round.result;
+  render(true);
+  const st = stats(); st.hands++; if (r.type === 'win' && r.winner === 0) st.wins++; st.net += r.delta[0];
+  set(KEY + 'stats', JSON.stringify(st));
+  const over = match.finish();
+  const box = $('overbox');
+  let h;
+  if (r.type === 'draw') h = '<h2>Drawn hand</h2><p>The wall ran out. Nobody wins; the dealer stays.</p>';
+  else {
+    h = `<h2>${r.winner === 0 ? 'You win!' : NAMES[r.winner] + ' wins'}</h2><p>${r.selfDraw ? 'Self-drawn.' : 'On ' + NAMES[r.discarder] + '’s discard.'} ${r.faan} faan = ${r.points} points${r.faan >= rules.limit ? ' (limit)' : ''}</p>`;
+    h += '<table>' + r.items.map(i => `<tr><td>${i.name}</td><td>${i.faan}</td></tr>`).join('') + '</table>';
+  }
+  h += '<div class="reveal">' + [0, 1, 2, 3].map(s => `<div><small>${NAMES[s]}</small><div class="row" data-seat="${s}"></div></div>`).join('') + '</div>';
+  h += '<table>' + [0, 1, 2, 3].map(s => `<tr><td>${NAMES[s]}</td><td>${r.delta[s] >= 0 ? '+' : ''}${r.delta[s]}</td><td>total ${match.scores[s]}</td></tr>`).join('') + '</table>';
+  h += over ? '<p><b>Match over.</b></p><button id="next">New match</button>' : '<button id="next">Next hand</button>';
+  box.innerHTML = h;
+  [0, 1, 2, 3].forEach(s => {
+    const row = box.querySelector(`.row[data-seat="${s}"]`), p = round.players[s];
+    sortTiles(p.hand).forEach(t => row.appendChild(tileEl(t, 'sm')));
+    p.melds.forEach(m => { const d = meldEl({ ...m, open: true }); d.style.marginLeft = '8px'; row.appendChild(d); });
+  });
+  $('over').classList.add('show');
+  $('next').onclick = () => { $('over').classList.remove('show'); over ? newMatch() : playMatchHand(); };
+  render(true);
+}
+
+function newMatch() {
+  runId++; wait = null; actions([]); $('over').classList.remove('show');
+  const base = seedBase != null ? seedBase : (Math.random() * 2 ** 31) | 0;
+  match = new Match(rules, { rand: rng(base), length: 1 });
+  playMatchHand();
+}
+
+// variant selector
+const sel = $('variant');
+for (const [id, v] of Object.entries(VARIANTS)) sel.add(new Option(v.name, id));
+for (const p of PLANNED) { const o = new Option(p.name, p.id); o.disabled = true; sel.add(o); }
+const saved = get(KEY + 'variant');
+sel.value = VARIANTS[saved] ? saved : DEFAULT_VARIANT;
+rules = VARIANTS[sel.value];
+sel.onchange = () => { set(KEY + 'variant', sel.value); rules = VARIANTS[sel.value]; newMatch(); };
+$('new').onclick = newMatch;
+window.__mj = { get round() { return round; }, get match() { return match; } };
+newMatch();
+</script>
+</body>
+</html>

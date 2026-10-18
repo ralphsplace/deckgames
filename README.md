@@ -8,7 +8,8 @@ Offline-first card and tile games, served as plain static files. No logins, no d
 | Bridge, "Just declare" mode (robots bid, you declare) | done, v1 |
 | Bridge, "Bid & play" mode (you bid South against robots) | done, v1 |
 | Mahjong Solitaire (turtle layout, always-solvable deals) | done |
-| Mahjong with robot players | planned (variant to be chosen) |
+| Mahjong Table: 4 players, you vs 3 robots, Hong Kong rules | done, v1 |
+| Mahjong Table: Riichi variant (to become the default) | planned |
 
 ## Run it
 - **Docker (NAS):** `docker compose up -d`, then open `http://<host>:8080`
@@ -21,6 +22,15 @@ Offline-first card and tile games, served as plain static files. No logins, no d
 `node --test` from this folder (Node 18+). Covers bridge rules, scoring, auction legality, the bidding engine (1,500
 simulated auctions, all legal, calibrated against combined HCP), 100+ robot-played boards, and the mahjong rules and
 solvability of every deal.
+
+## Mahjong Table
+One game with a selectable ruleset (the "Rules" box). Hong Kong is first; Riichi shares the same core (wall, draw/discard,
+claims, hand analysis, robots) and will be added as `engine/rules/riichi.js`, then made the default in
+`engine/rules/index.js`. Hong Kong v1: 144 tiles, flowers/seasons, 3-faan minimum, 10-faan limit, East round (extended
+when the dealer wins or the hand is drawn). Faans: common hand, all pungs, one-suit (mixed/pure), dragon and wind pungs,
+small/big three dragons, flowers, concealed, self-drawn, last tile, replacement tile, limit hands (thirteen orphans, all
+honors, four winds). Payments: self-draw, every opponent pays; by discard, the discarder pays. Not yet: robbing the kong,
+kong payments, seven pairs, multiple round winds. Robots only declare a win that meets the minimum.
 
 ## Layout
 ```
@@ -37,6 +47,12 @@ deckgames/
       engine/tiles.js         tile set and matching rule
       engine/game.js          free-tile rule, reverse-built solvable deals, undo, shuffle
       mahjong.test.js
+    mahjong-table/
+      index.html              4-player table UI, claim buttons, results screen, variant selector
+      engine/tiles.js hand.js round.js match.js   ruleset-agnostic core (shanten, claims, dealer rotation)
+      engine/rules/           hk.js (scoring + payments), index.js (variant registry, default)
+      ai/robot.js             discards, claims, wins
+      mahjong-table.test.js
     bridge/
       index.html              table UI: mode switch, auction grid, bidding box, alerts on hover/click
       engine/                 pure rules, no DOM: cards, auction, play, scoring, table (modes 'declare' and 'full')
