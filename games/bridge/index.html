@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bridge</title>
+<link rel="stylesheet" href="../../shared/cards.css">
+<style>
+  :root { --cw: min(8vw, 60px); }
+  #app { max-width: 920px; margin: 0 auto; padding: 12px; }
+  header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  header h1 { font-size: 20px; margin: 0 auto 0 0; }
+  #stats { font-size: 14px; opacity: .9; }
+  #status { min-height: 44px; margin: 10px 0 12px; font-size: 15px; line-height: 1.4; }
+  #tbl { display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: ". n ." "w c e" ". s .";
+         gap: 14px; align-items: center; justify-items: center; }
+  #n { grid-area: n } #s { grid-area: s } #w { grid-area: w } #e { grid-area: e } #c { grid-area: c }
+  .label { font-size: 13px; opacity: .85; margin-bottom: 4px; text-align: center; }
+  .fan { position: relative; margin: 0 auto; }
+  .fan .card.legal { cursor: pointer; }
+  .fan .card.legal:hover { transform: translateY(-8px); }
+  .fan .card.dim { filter: brightness(.62); }
+  .pill { padding: 8px 14px; border-radius: 999px; background: rgba(0,0,0,.25); font-size: 14px; white-space: nowrap; }
+  .seat.turn .pill, .seat.turn .label { outline: 2px solid #ffd54a; border-radius: 999px; }
+  #c { display: grid; grid-template-columns: repeat(3, var(--cw)); grid-template-rows: repeat(3, calc(var(--cw) * 1.4)); gap: 4px; }
+  .slot { position: relative; } .slot .card { top: 0; }
+  .slot.n { grid-column: 2; grid-row: 1 } .slot.w { grid-column: 1; grid-row: 2 }
+  .slot.e { grid-column: 3; grid-row: 2 } .slot.s { grid-column: 2; grid-row: 3 }
+  /* bidding */
+  #bidpane { display: none; gap: 18px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  #bidpane.show { display: flex; }
+  table.auc { border-collapse: collapse; background: rgba(0,0,0,.22); border-radius: 8px; overflow: hidden; min-width: 270px; }
+  table.auc th, table.auc td { width: 68px; padding: 6px 4px; text-align: center; font-size: 14px; }
+  table.auc th { background: rgba(0,0,0,.3); font-weight: normal; }
+  table.auc td.alert { cursor: help; text-decoration: underline dotted; }
+  table.auc .vul { color: #ff8a80; }
+  .red { color: #ff8a80; }
+  #box { display: grid; grid-template-columns: repeat(5, 46px); gap: 4px; }
+  #box button { padding: 6px 0; }
+  #box .wide { grid-column: span 5; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  #box button:disabled { opacity: .3; cursor: default; }
+  #box button.r { color: #c0182b; }
+  #alert { min-height: 20px; font-size: 13px; opacity: .9; text-align: center; margin-top: 6px; width: 100%; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="back" href="../../">&larr; Games</a>
+    <h1>Bridge</h1>
+    <select id="mode" title="Game mode">
+      <option value="declare">Just declare</option>
+      <option value="full">Bid &amp; play</option>
+    </select>
+    <span id="stats"></span>
+    <button id="next" hidden>Next hand</button>
+  </header>
+  <div id="status"></div>
+  <div id="bidpane">
+    <div><table class="auc"><thead><tr id="auchead"></tr></thead><tbody id="aucbody"></tbody></table></div>
+    <div id="box"></div>
+    <div id="alert"></div>
+  </div>
+  <div id="tbl">
+    <div id="n" class="seat"></div><div id="w" class="seat"></div><div id="c"></div>
+    <div id="e" class="seat"></div><div id="s" class="seat"></div>
+  </div>
+</div>
+
+<script type="module">
+import { Table } from './engine/table.js';
+import { legalPlays } from './engine/play.js';
+import { isLegal, PASS, X, XX, bid, turn } from './engine/auction.js';
+import { SEATS, SYM, SEAT_NAME, same, side } from './engine/cards.js';
+import { pickContract } from './ai/contract.js';
+import { chooseCall } from './ai/bidder.js';
+import { choosePlay } from './ai/player.js';
+import { cardEl } from '../../shared/cardview.js';
+
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fmt = n => (n > 0 ? '+' : '') + n;
+const contractText = c => `${c.level}${SYM[c.strain]}${'x'.repeat(c.dbl)} by ${SEAT_NAME[c.declarer]}`;
+const callText = c => c.type === 'bid' ? `${c.level}${SYM[c.strain]}` : c.type === 'pass' ? 'Pass' : c.type === 'x' ? 'X' : 'XX';
+
+let mode = (() => { try { return localStorage.getItem('deckgames.bridge.mode') || 'declare'; } catch { return 'declare'; } })();
+let table, busy = false, shown = null, totals, runId = 0;
+const KEY = () => `deckgames.bridge.totals.${mode}`;
+function loadTotals() {
+  totals = { total: 0, hands: 0 };
+  try { totals = { ...totals, ...JSON.parse(localStorage.getItem(KEY()) || '{}') }; } catch {}
+}
+const saveTotals = () => { try { localStorage.setItem(KEY(), JSON.stringify(totals)); } catch {} };
+function newTable() {
+  table = new Table({ mode, human: 'S', contractProvider: pickContract, bidder: chooseCall, player: choosePlay });
+  loadTotals();
+}
+
+// ---------- hands and trick ----------
+function fan(hand, interactive) {
+  const legal = interactive ? legalPlays(table.play) : [];
+  const wrap = document.createElement('div');
+  wrap.className = 'fan';
+  const step = 0.42;
+  wrap.style.width = `calc(var(--cw) * ${step * (Math.max(hand.length, 1) - 1) + 1})`;
+  wrap.style.height = 'calc(var(--cw) * 1.4)';
+  hand.forEach((c, i) => {
+    const el = cardEl(c);
+    el.style.left = `calc(var(--cw) * ${step * i})`;
+    if (interactive) {
+      if (legal.some(l => same(l, c))) { el.classList.add('legal'); el.onclick = () => onPlay(c); }
+      else el.classList.add('dim');
+    }
+    wrap.appendChild(el);
+  });
+  return wrap;
+}
+function renderSeat(seat) {
+  const box = $(seat.toLowerCase()), p = table.play;
+  box.innerHTML = '';
+  const hand = p ? p.hands[seat] : table.hands[seat];
+  let tag = '', visible = seat === table.human;
+  if (p) {
+    tag = seat === p.contract.declarer ? ' (declarer)' : seat === p.dummy ? ' (dummy)' : '';
+    visible = visible || (seat === p.dummy && p.dummyVisible);
+    box.classList.toggle('turn', table.phase === 'play' && p.turn === seat);
+  } else box.classList.toggle('turn', table.phase === 'auction' && turn(table.auction) === seat);
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.textContent = `${SEAT_NAME[seat]}${tag}${seat === table.dealer ? ' · dealer' : ''}`;
+  box.appendChild(label);
+  if (visible) box.appendChild(fan(hand, !!p && !busy && table.isHumanTurn() && p.turn === seat));
+  else { const pill = document.createElement('div'); pill.className = 'pill'; pill.textContent = `${hand.length} cards`; box.appendChild(pill); }
+}
+function renderTrick() {
+  const c = $('c'); c.innerHTML = '';
+  const t = shown || (table.play ? table.play.trick : []);
+  t.forEach(({ seat, card }) => {
+    const s = document.createElement('div');
+    s.className = 'slot ' + seat.toLowerCase();
+    s.appendChild(cardEl(card));
+    c.appendChild(s);
+  });
+}
+
+// ---------- bidding ----------
+const ORDER = ['W', 'N', 'E', 'S'];
+function renderAuction() {
+  const a = table.mode === 'full' ? table.auction : table.declareAuction;
+  const pane = $('bidpane');
+  pane.classList.toggle('show', table.mode === 'full');
+  if (table.mode !== 'full') return;
+  $('auchead').innerHTML = ORDER.map(s => `<th class="${table.vul[side(s)] ? 'vul' : ''}">${SEAT_NAME[s]}</th>`).join('');
+  const body = $('aucbody'); body.innerHTML = '';
+  let row = null, col = ORDER.indexOf(a.dealer);
+  const newRow = () => { row = document.createElement('tr'); body.appendChild(row); };
+  newRow();
+  for (let i = 0; i < col; i++) row.appendChild(document.createElement('td'));
+  a.calls.forEach(e => {
+    if (col % 4 === 0 && row.children.length === 4) newRow();
+    const td = document.createElement('td');
+    td.textContent = callText(e.call);
+    if (e.call.type === 'bid' && (e.call.strain === 'H' || e.call.strain === 'D')) td.className = 'red';
+    if (e.call.meaning?.text) { td.title = e.call.meaning.text; td.classList.add('alert'); td.onclick = () => { $('alert').textContent = `${SEAT_NAME[e.seat]} ${callText(e.call)}: ${e.call.meaning.text}`; }; }
+    row.appendChild(td); col++;
+  });
+  // bidding box
+  const box = $('box'); box.innerHTML = '';
+  const mine = table.phase === 'auction' && !busy && table.isHumanTurn();
+  for (let lv = 1; lv <= 7; lv++) for (const st of ['C', 'D', 'H', 'S', 'N']) {
+    const b = document.createElement('button');
+    b.textContent = lv + SYM[st];
+    if (st === 'H' || st === 'D') b.className = 'r';
+    b.disabled = !mine || !isLegal(table.auction, bid(lv, st));
+    b.onclick = () => onCall(bid(lv, st));
+    box.appendChild(b);
+  }
+  const wide = document.createElement('div'); wide.className = 'wide';
+  [['Pass', PASS], ['X', X], ['XX', XX]].forEach(([t, c]) => {
+    const b = document.createElement('button'); b.textContent = t;
+    b.disabled = !mine || !isLegal(table.auction, c);
+    b.onclick = () => onCall(c); wide.appendChild(b);
+  });
+  box.appendChild(wide);
+}
+
+function renderStatus() {
+  const p = table.play, r = table.result;
+  const vul = ['NS', 'EW'].filter(s => table.vul[s]).join(' & ') || 'none';
+  let s = `Board ${table.board} &middot; dealer ${SEAT_NAME[table.dealer]} &middot; vulnerable: ${vul}<br>`;
+  if (table.phase === 'auction') s += table.isHumanTurn() && !busy ? 'Your call &mdash; use the bidding box.' : `${SEAT_NAME[turn(table.auction)]} is bidding&hellip;`;
+  else if (r && r.passedOut) s += '<b>Passed out.</b> No score.';
+  else if (p) {
+    const c = p.contract, need = c.level + 6, ds = side(c.declarer), mine = p.tricks[ds];
+    s += `<b>Contract ${contractText(c)}</b> &middot; needs ${need} tricks &middot; declarer side ${mine}, defenders ${p.history.length - mine}`;
+    if (r) s += `<br><b>${r.tricks >= need ? 'Made' : 'Down ' + (need - r.tricks)}</b> with ${r.tricks} tricks. North-South ${fmt(r.ns)}.`;
+    else if (table.isHumanTurn() && !busy) s += `<br>Your play${p.turn === p.dummy ? ' from dummy (' + SEAT_NAME[p.turn] + ')' : ''}.`;
+    else s += `<br>${SEAT_NAME[p.turn]} is thinking&hellip;`;
+  }
+  $('status').innerHTML = s;
+  $('stats').textContent = `Hands: ${totals.hands} · Total: ${fmt(totals.total)}`;
+  $('next').hidden = table.phase !== 'done' || busy;
+}
+function render() { settle(); SEATS.forEach(renderSeat); renderTrick(); renderAuction(); renderStatus(); }
+
+// ---------- flow ----------
+async function showEvent(ev) {
+  if (ev.completed) { shown = ev.completed.trick; render(); await sleep(1000); shown = null; }
+  render();
+}
+function settle() {
+  if (table.phase === 'done' && table.result && !table.result.counted) {
+    table.result.counted = true;
+    totals.total += table.result.ns; totals.hands++; saveTotals();
+  }
+}
+async function run() {
+  const me = ++runId;
+  busy = true; render();
+  while (me === runId && table.phase !== 'done' && !table.isHumanTurn()) {
+    await sleep(table.phase === 'auction' ? 700 : 600);
+    if (me !== runId || table.phase === 'done' || table.isHumanTurn()) break;
+    await showEvent(table.robotStep());
+  }
+  if (me !== runId) return;
+  busy = false; render();
+}
+async function onCall(call) {
+  if (busy || !table.isHumanTurn() || table.phase !== 'auction') return;
+  busy = true; $('alert').textContent = '';
+  await showEvent(table.humanCall(call));
+  run();
+}
+async function onPlay(card) {
+  if (busy || !table.isHumanTurn()) return;
+  busy = true;
+  await showEvent(table.humanPlay(card));
+  run();
+}
+$('next').onclick = () => { if (busy) return; table.nextBoard(); $('alert').textContent = ''; run(); };
+$('mode').value = mode;
+$('mode').onchange = e => {
+  mode = e.target.value;
+  try { localStorage.setItem('deckgames.bridge.mode', mode); } catch {}
+  newTable(); $('alert').textContent = ''; run();
+};
+newTable();
+run();
+</script>
+</body>
+</html>

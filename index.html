@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deck Games</title>
+<link rel="stylesheet" href="shared/cards.css">
+<style>
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+  h1 { margin: 0 0 4px; font-size: 30px; }
+  p.sub { margin: 0 0 24px; opacity: .8; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+  .tile { display: block; padding: 20px; border-radius: 12px; background: rgba(0,0,0,.22); color: #fff;
+          text-decoration: none; border: 1px solid rgba(255,255,255,.15); }
+  a.tile:hover { background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.4); }
+  .tile .icon { font-size: 40px; line-height: 1; }
+  .tile h2 { margin: 10px 0 4px; font-size: 20px; }
+  .tile p { margin: 0; font-size: 14px; opacity: .8; }
+  .tile.soon { opacity: .5; cursor: default; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Deck Games</h1>
+  <p class="sub">Runs entirely on your own network. No logins, no daily limits.</p>
+  <div class="grid">
+    <a class="tile" href="games/solitaire/">
+      <div class="icon">&#9824;</div><h2>Solitaire</h2><p>Classic Klondike, draw 1 or 3.</p>
+    </a>
+    <a class="tile" href="games/bridge/">
+      <div class="icon">&#9829;</div><h2>Bridge</h2><p>Play the hand as declarer, or bid and play against robots (2/1 system).</p>
+    </a>
+    <a class="tile" href="games/mahjong/">
+      <div class="icon">&#9638;</div><h2>Mahjong Solitaire</h2><p>Clear the turtle. Every deal is solvable, with hint, undo and shuffle.</p>
+    </a>
+  </div>
+</main>
+</body>
+</html>

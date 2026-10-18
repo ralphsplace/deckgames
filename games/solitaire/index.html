@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solitaire</title>
+<link rel="stylesheet" href="../../shared/cards.css">
+<style>
+  #app { max-width: 760px; margin: 0 auto; padding: 12px; }
+  header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  header h1 { font-size: 20px; margin: 0 auto 0 0; letter-spacing: .5px; }
+  #stats { font-size: 14px; opacity: .9; }
+  #board { display: grid; grid-template-columns: repeat(7, var(--cw)); gap: calc(var(--cw) * .12); justify-content: center; }
+  .pile { position: relative; width: var(--cw); min-height: calc(var(--cw) * 1.4);
+          border-radius: calc(var(--cw) * .08); background: rgba(0,0,0,.18); }
+  .pile.spacer { background: none; pointer-events: none; }
+  .pile.f::after { content: "A"; position: absolute; inset: 0; display: grid; place-items: center;
+                   font-size: calc(var(--cw) * .4); color: rgba(255,255,255,.25); }
+  .pile.f:not(:empty)::after, .pile#stock:not(:empty)::after { display: none; }
+  .pile#stock:empty::after { content: "\21BB"; position: absolute; inset: 0; display: grid; place-items: center;
+                             font-size: calc(var(--cw) * .5); color: rgba(255,255,255,.35); }
+  .row2 { margin-top: calc(var(--cw) * .25); }
+  #win { position: fixed; inset: 0; display: none; place-items: center; background: rgba(0,0,0,.6); z-index: 10; }
+  #win.show { display: grid; }
+  #win div { background: #fff; color: #0a3a20; padding: 28px 40px; border-radius: 12px; text-align: center; font-size: 22px; }
+  #win button { margin-top: 14px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="back" href="../../">&larr; Games</a>
+    <h1>Solitaire</h1>
+    <span id="stats"></span>
+    <select id="draw" title="Cards drawn from stock">
+      <option value="1">Draw 1</option>
+      <option value="3">Draw 3</option>
+    </select>
+    <button id="undo">Undo</button>
+    <button id="new">New game</button>
+  </header>
+  <div id="board"></div>
+</div>
+<div id="win"><div>You won!<br><button id="again">Play again</button></div></div>
+
+<script>
+(() => {
+  const SUITS = ['\u2660', '\u2665', '\u2666', '\u2663'];           // spades, hearts, diamonds, clubs
+  const RANKS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+  const isRed = c => c.s === 1 || c.s === 2;
+  const UP_OFF = 0.3, DOWN_OFF = 0.14;                                // tableau offsets, in card-widths
+
+  let G, sel = null, history = [];
+
+  const board = document.getElementById('board');
+  const piles = {};
+  function mkPile(id, cls) {
+    const d = document.createElement('div');
+    d.className = 'pile ' + (cls || '');
+    d.dataset.pile = id;
+    d.id = id;                       // lets the #stock / #waste CSS rules apply
+    board.appendChild(d);
+    piles[id] = d;
+    return d;
+  }
+  mkPile('stock'); mkPile('waste');
+  mkPile('sp', 'spacer');
+  for (let i = 0; i < 4; i++) mkPile('f' + i, 'f');
+  for (let i = 0; i < 7; i++) mkPile('t' + i, 'row2');
+
+  function newGame() {
+    const deck = [];
+    for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) deck.push({ s, r, up: false });
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    G = { stock: [], waste: [], found: [[], [], [], []], tab: [[], [], [], [], [], [], []], moves: 0 };
+    for (let c = 0; c < 7; c++) {
+      for (let k = 0; k <= c; k++) G.tab[c].push(deck.pop());
+      G.tab[c][c].up = true;
+    }
+    G.stock = deck;
+    sel = null; history = [];
+    document.getElementById('win').classList.remove('show');
+    render();
+  }
+
+  const snap = () => { history.push(JSON.stringify(G)); if (history.length > 500) history.shift(); };
+  function undo() {
+    if (!history.length) return;
+    G = JSON.parse(history.pop());
+    sel = null;
+    render();
+  }
+
+  function cardEl(c, pile, idx, top, selected) {
+    const d = document.createElement('div');
+    d.className = 'card ' + (c.up ? 'up' + (isRed(c) ? ' red' : '') : 'down') + (selected ? ' sel' : '');
+    d.dataset.pile = pile;
+    d.dataset.idx = idx;
+    d.style.top = `calc(var(--cw) * ${top})`;
+    if (c.up) {
+      const corner = `${RANKS[c.r]}<br>${SUITS[c.s]}`;
+      d.innerHTML = `<span class="c tl">${corner}</span><span class="mid">${SUITS[c.s]}</span><span class="c br">${corner}</span>`;
+    }
+    return d;
+  }
+
+  const isSel = (pile, idx) => sel && sel.pile === pile && idx >= sel.idx;
+
+  function render() {
+    for (const k in piles) piles[k].innerHTML = '';
+    // stock: show only the top back
+    if (G.stock.length) piles.stock.appendChild(cardEl({ up: false }, 'stock', G.stock.length - 1, 0, false));
+    // waste: show top (up to 3 fanned when drawing 3)
+    const n = Math.min(G.waste.length, +document.getElementById('draw').value === 3 ? 3 : 1);
+    for (let i = 0; i < n; i++) {
+      const idx = G.waste.length - n + i;
+      const el = cardEl(G.waste[idx], 'waste', idx, 0, isSel('waste', idx));
+      el.style.left = `calc(var(--cw) * ${i * 0.22})`;
+      piles.waste.appendChild(el);
+    }
+    // foundations
+    G.found.forEach((f, i) => {
+      if (f.length) piles['f' + i].appendChild(cardEl(f[f.length - 1], 'f' + i, f.length - 1, 0, isSel('f' + i, f.length - 1)));
+    });
+    // tableau
+    G.tab.forEach((col, i) => {
+      let top = 0;
+      col.forEach((c, idx) => {
+        piles['t' + i].appendChild(cardEl(c, 't' + i, idx, top, isSel('t' + i, idx)));
+        top += c.up ? UP_OFF : DOWN_OFF;
+      });
+      piles['t' + i].style.minHeight = `calc(var(--cw) * ${1.4 + Math.max(0, top - (col.length ? (col[col.length - 1].up ? UP_OFF : DOWN_OFF) : 0))})`;
+    });
+    document.getElementById('stats').textContent = `Moves: ${G.moves}`;
+  }
+
+  // ---- rules ----
+  function foundOK(card, f) {
+    if (!f.length) return card.r === 1;
+    const t = f[f.length - 1];
+    return t.s === card.s && card.r === t.r + 1;
+  }
+  function tabOK(card, col) {
+    if (!col.length) return card.r === 13;
+    const t = col[col.length - 1];
+    return t.up && isRed(t) !== isRed(card) && t.r === card.r + 1;
+  }
+  function selCards() {
+    if (!sel) return [];
+    if (sel.pile === 'waste') return G.waste.slice(-1);
+    if (sel.pile[0] === 'f') { const f = G.found[+sel.pile[1]]; return f.slice(-1); }
+    return G.tab[+sel.pile[1]].slice(sel.idx);
+  }
+  function tryMove(target) {
+    const cards = selCards();
+    if (!cards.length || target === sel.pile) return false;
+    const tn = +target[1];
+    if (target[0] === 't') { if (!tabOK(cards[0], G.tab[tn])) return false; }
+    else if (target[0] === 'f') { if (cards.length !== 1 || !foundOK(cards[0], G.found[tn])) return false; }
+    else return false;
+    snap();
+    // remove from source
+    if (sel.pile === 'waste') G.waste.pop();
+    else if (sel.pile[0] === 'f') G.found[+sel.pile[1]].pop();
+    else {
+      const src = G.tab[+sel.pile[1]];
+      src.splice(sel.idx);
+      if (src.length) src[src.length - 1].up = true;       // auto-flip
+    }
+    (target[0] === 't' ? G.tab[tn] : G.found[tn]).push(...cards);
+    G.moves++;
+    sel = null;
+    render();
+    if (G.found.every(f => f.length === 13)) document.getElementById('win').classList.add('show');
+    return true;
+  }
+
+  function drawFromStock() {
+    const n = +document.getElementById('draw').value;
+    if (G.stock.length) {
+      snap();
+      for (let i = 0; i < n && G.stock.length; i++) { const c = G.stock.pop(); c.up = true; G.waste.push(c); }
+    } else if (G.waste.length) {
+      snap();
+      while (G.waste.length) { const c = G.waste.pop(); c.up = false; G.stock.push(c); }
+    } else return;
+    G.moves++;
+    sel = null;
+    render();
+  }
+
+  // ---- input ----
+  function target(e) {
+    const p = e.target.closest('[data-pile]');
+    if (!p || p.dataset.pile === 'sp') return null;
+    return { pile: p.dataset.pile, idx: p.classList.contains('card') ? +p.dataset.idx : -1 };
+  }
+
+  board.addEventListener('click', e => {
+    const t = target(e);
+    if (!t) return;
+    const { pile, idx } = t;
+    if (pile === 'stock') return drawFromStock();
+    if (pile === 'waste') {
+      if (!G.waste.length) return;
+      sel = (sel && sel.pile === 'waste') ? null : { pile: 'waste', idx: G.waste.length - 1 };
+      return render();
+    }
+    if (pile[0] === 'f') {
+      if (sel && tryMove(pile)) return;
+      const f = G.found[+pile[1]];
+      sel = (f.length && !(sel && sel.pile === pile)) ? { pile, idx: f.length - 1 } : null;
+      return render();
+    }
+    // tableau
+    const col = G.tab[+pile[1]];
+    if (idx === -1) { if (sel) tryMove(pile); return; }
+    const c = col[idx];
+    if (!c.up) {
+      if (idx === col.length - 1) { snap(); c.up = true; G.moves++; sel = null; render(); }
+      return;
+    }
+    if (sel && sel.pile !== pile && tryMove(pile)) return;
+    sel = (sel && sel.pile === pile && sel.idx === idx) ? null : { pile, idx };
+    render();
+  });
+
+  board.addEventListener('dblclick', e => {
+    const t = target(e);
+    if (!t || (t.pile !== 'waste' && t.pile[0] !== 't')) return;
+    const src = t.pile === 'waste' ? G.waste : G.tab[+t.pile[1]];
+    if (!src.length) return;
+    const idx = src.length - 1;
+    if (!src[idx].up) return;
+    sel = { pile: t.pile, idx };
+    for (let i = 0; i < 4; i++) if (tryMove('f' + i)) return;
+    sel = null;
+    render();
+  });
+
+  document.getElementById('undo').onclick = undo;
+  document.getElementById('new').onclick = newGame;
+  document.getElementById('again').onclick = newGame;
+  document.getElementById('draw').onchange = newGame;
+
+  newGame();
+})();
+</script>
+</body>
+</html>

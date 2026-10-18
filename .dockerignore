@@ -1,0 +1,9 @@
+docker-compose.yml
+.dockerignore
+**/package.json
+**/*.test.js
+serve.py
+README.md
+.github
+.nojekyll
+.git
