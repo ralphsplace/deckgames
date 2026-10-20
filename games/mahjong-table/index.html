@@ -99,13 +99,15 @@ function meldEl(m, small = true) {
   m.tiles.forEach((t, i) => d.appendChild(tileEl(!m.open && (m.type === 'kong') && (i === 0 || i === 3) ? null : t, small ? 'sm' : '')));
   return d;
 }
-const seatLabel = s => `${NAMES[s]} <b>${WINDS[round.wind(s)]}</b>${s === round.dealer ? ' (dealer)' : ''} · ${match.scores[s] >= 0 ? '+' : ''}${match.scores[s]}`;
+const seatLabel = s => `${NAMES[s]} <b>${WINDS[round.wind(s)]}</b>${s === round.dealer ? ' (dealer)' : ''}${round.players[s].riichi ? ' · <b>RIICHI</b>' : ''}${round.isFuriten(s) && round.players[s].melds.length < 5 && s === 0 && rules.furiten ? ' · furiten' : ''} · ${match.scores[s] >= 0 ? '+' : ''}${match.scores[s]}`;
 
 function render(reveal = false) {
   if (!round) return;
   const roundName = ['East', 'South', 'West', 'North'][round.round];
   const st = stats();
-  $('info').textContent = `${rules.name} · ${roundName} round · hand ${match.hand} · wall ${Math.max(0, round.liveLeft)} · lifetime: ${st.wins}/${st.hands} won, net ${st.net >= 0 ? '+' : ''}${st.net}`;
+  const ind = round.indicators.length ? ' · dora indicator: ' + round.indicators.map(tileName).join(', ') : '';
+  const extra = rules.riichiBet ? ` · honba ${match.honba} · riichi sticks ${round.phase === 'over' ? match.pot : match.pot + round.sticks}` : '';
+  $('info').textContent = `${rules.name} · ${roundName} round · hand ${match.hand} · wall ${Math.max(0, round.liveLeft)}${ind}${extra} · lifetime: ${st.wins}/${st.hands} won, net ${st.net >= 0 ? '+' : ''}${st.net}`;
   for (const s of [1, 2, 3]) {
     const p = round.players[s], el = $('s' + s);
     el.innerHTML = `<h3>${seatLabel(s)}${round.turn === s && round.phase !== 'over' ? ' ◀' : ''}</h3>`;
@@ -137,8 +139,9 @@ function render(reveal = false) {
   if (round.drawn && round.turn === 0 && order.includes(round.drawn)) { order.splice(order.indexOf(round.drawn), 1); order.push(round.drawn); }
   order.forEach((t, i) => {
     const last = i === order.length - 1 && round.drawn && round.turn === 0 && t === round.drawn;
-    const el = tileEl(t, (canPick ? 'pick ' : '') + (last ? 'drawn' : ''));
-    if (canPick) el.onclick = () => wait.resolve({ discard: t });
+    const ok = !wait || !wait.allowed || wait.allowed.has(t);
+    const el = tileEl(t, (canPick && ok ? 'pick ' : '') + (last ? 'drawn' : '') + (canPick && wait.allowed && ok ? ' last' : ''));
+    if (canPick && ok) el.onclick = () => wait.resolve({ discard: t });
     row.appendChild(el);
   });
   me.appendChild(row);
@@ -156,37 +159,54 @@ function actions(list) {
     b.onclick = () => wait && wait.resolve(a.value); box.appendChild(b);
   }
 }
-function ask(kind) { return new Promise(resolve => { wait = { kind, resolve: v => { wait = null; actions([]); resolve(v); } }; }); }
+function ask(kind) { return new Promise(resolve => { wait = { kind, allowed: null, resolve: v => { wait = null; actions([]); resolve(v); } }; }); }
 
 async function humanTurn(my) {
+  let riichiMode = false;
   for (;;) {
-    const o = round.selfOptions(), list = [];
-    if (o.win) list.push({ label: `Declare win (${o.win.faan} faan)`, value: { action: 'win' }, cls: 'win' });
+    const o = round.selfOptions(), list = [], me = round.players[0];
+    if (o.win) list.push({ label: `Declare win (${o.win.faan} ${rules.unit})`, value: { action: 'win' }, cls: 'win' });
+    if (me.riichi) {
+      // locked hand: only the drawn tile can go
+      list.push({ label: 'Discard drawn tile', value: { discard: round.drawn } });
+      actions(list); say(o.win ? 'You are in riichi. You can win on this tile.' : 'You are in riichi: discarding the drawn tile.');
+      render();
+      if (!o.win) { await sleep(600); if (my !== runId) return null; return { tile: round.drawn, riichi: false }; }
+      const v = await ask('locked');
+      if (my !== runId) return null;
+      if (v.action === 'win') { round.selfWin(); return 'over'; }
+      return { tile: v.discard, riichi: false };
+    }
     for (const t of new Set([...o.concealedKongs, ...o.addKongs])) list.push({ label: `Kong ${tileName(t)}`, value: { action: 'kong', tile: t } });
-    actions(list); say('Your turn: click a tile to discard.');
-    const pr = ask('turn'); render();
+    if (o.riichi.length) list.push({ label: riichiMode ? 'Cancel riichi' : 'Riichi', value: { action: 'riichi' } });
+    actions(list);
+    say(riichiMode ? 'Riichi: click the tile to discard (highlighted tiles keep you ready).' : 'Your turn: click a tile to discard.');
+    wait = null; const pr = ask('turn'); wait.allowed = riichiMode ? new Set(o.riichi) : null; render();
     const v = await pr;
     if (my !== runId) return null;
+    if (v.action === 'riichi') { riichiMode = !riichiMode; continue; }
     if (v.action === 'win') { round.selfWin(); return 'over'; }
     if (v.action === 'kong') { if (round.kong(v.tile) === null) return 'over'; render(); continue; }
-    return v.discard;
+    return { tile: v.discard, riichi: riichiMode };
   }
 }
 
 async function playMatchHand() {
   const my = ++runId;
   round = match.next(); handNo++;
+  if (qs.get('rig') === 'riichi' && handNo === 1) round.players[0].hand = 'c1 c2 d4 d5 d6 b7 b8 b9 c5 c6 c7 d2 d2'.split(' ');   // test hook
   render(); say(`New hand. You are ${WINDS[round.wind(0)]}.`);
   await sleep(500);
   while (round.phase !== 'over') {
     if (my !== runId) return;
     if (round.phase === 'draw') { if (round.draw() === null) break; render(); await sleep(250); }
     const seat = round.turn;
-    let tile;
+    let tile, riichiNow = false;
     if (seat === 0) {
-      tile = await humanTurn(my);
+      const h = await humanTurn(my);
       if (my !== runId) return;
-      if (tile === 'over') break;
+      if (h === 'over') break;
+      tile = h.tile; riichiNow = h.riichi;
     } else {
       for (;;) {
         const s = chooseSelf(round, seat);
@@ -195,10 +215,10 @@ async function playMatchHand() {
         say(`${NAMES[seat]} declares a kong.`); if (round.kong(s.tile) === null) break; render(); await sleep(500);
       }
       if (round.phase === 'over') break;
-      tile = chooseDiscard(round, seat);
+      const d = chooseDiscard(round, seat); tile = d.tile; riichiNow = d.riichi;
     }
-    const opts = round.discard(tile); render();
-    say(`${NAMES[seat]} discards <b>${tileName(tile)}</b>.`);
+    const opts = round.discard(tile, { riichi: riichiNow }); render();
+    say(`${NAMES[seat]} ${riichiNow ? 'declares <b>riichi</b> and ' : ''}discards <b>${tileName(tile)}</b>.`);
     await sleep(450);
     const dec = {};
     for (const [st, o] of Object.entries(opts)) {
@@ -230,9 +250,9 @@ function finishHand() {
   const over = match.finish();
   const box = $('overbox');
   let h;
-  if (r.type === 'draw') h = '<h2>Drawn hand</h2><p>The wall ran out. Nobody wins; the dealer stays.</p>';
+  if (r.type === 'draw') h = `<h2>Drawn hand</h2><p>The wall ran out.${r.tenpai ? ' Ready hands: ' + (r.tenpai.map((t, i) => t ? NAMES[i] : null).filter(Boolean).join(', ') || 'none') + '.' : ''}</p>`;
   else {
-    h = `<h2>${r.winner === 0 ? 'You win!' : NAMES[r.winner] + ' wins'}</h2><p>${r.selfDraw ? 'Self-drawn.' : 'On ' + NAMES[r.discarder] + '’s discard.'} ${r.faan} faan = ${r.points} points${r.faan >= rules.limit ? ' (limit)' : ''}</p>`;
+    h = `<h2>${r.winner === 0 ? 'You win!' : NAMES[r.winner] + ' wins'}</h2><p>${r.selfDraw ? 'Self-drawn.' : 'On ' + NAMES[r.discarder] + '’s discard.'} ${r.yakuman ? 'Yakuman!' : `${r.faan} ${rules.unit}${r.fu ? ' ' + r.fu + ' fu' : ''}`} = ${r.points} points</p>`;
     h += '<table>' + r.items.map(i => `<tr><td>${i.name}</td><td>${i.faan}</td></tr>`).join('') + '</table>';
   }
   h += '<div class="reveal">' + [0, 1, 2, 3].map(s => `<div><small>${NAMES[s]}</small><div class="row" data-seat="${s}"></div></div>`).join('') + '</div>';
