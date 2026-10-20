@@ -19,3 +19,19 @@ export function pickContract(hands, human = 'S', dealerSeat = 'N', bidder = choo
   SEATS.forEach((seat, i) => { rotated[SEATS[(i + shift) % 4]] = hands[seat]; });
   return { contract: { ...c, declarer: human }, hands: rotated, auction: a };
 }
+
+// Same, but the bidder may be async (MCP robots). Used by Table.nextBoardAsync.
+export async function pickContractAsync(hands, human = 'S', dealerSeat = 'N', bidder = chooseCall) {
+  const a = newAuction(dealerSeat);
+  for (let g = 0; !isComplete(a); g++) {
+    if (g > 80) return null;
+    const s = turn(a);
+    addCall(a, await bidder(hands[s], a, s));
+  }
+  const c = contractOf(a);
+  if (!c) return null;
+  const shift = (SEATS.indexOf(human) - SEATS.indexOf(c.declarer) + 4) % 4;
+  const rotated = {};
+  SEATS.forEach((seat, i) => { rotated[SEATS[(i + shift) % 4]] = hands[seat]; });
+  return { contract: { ...c, declarer: human }, hands: rotated, auction: a };
+}

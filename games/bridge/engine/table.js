@@ -12,7 +12,7 @@ export class Table {
   constructor(opts) {
     Object.assign(this, { mode: 'declare', human: 'S', rand: Math.random }, opts);
     this.board = 0;
-    this.nextBoard();
+    if (!this.defer) this.nextBoard();          // defer: true => the caller awaits nextBoardAsync() (async robots)
   }
   nextBoard() {
     this.board++;
@@ -30,6 +30,34 @@ export class Table {
       this.hands = deal(this.rand);
       this.auction = newAuction(this.dealer); this.phase = 'auction';
     }
+  }
+  // Same as nextBoard() but the contract provider / bidder / player may be async (e.g. an MCP robot server).
+  async nextBoardAsync() {
+    this.board++;
+    this.vul = { NS: isVul(this.board, 'NS'), EW: isVul(this.board, 'EW') };
+    this.result = null; this.play = null; this.auction = null; this.dealer = dealer(this.board);
+    this.hands = null;
+    if (this.mode === 'declare') {
+      for (let tries = 0; ; tries++) {
+        const hands = deal(this.rand);
+        // a robot source that keeps passing every hand out must not stall the game: switch to the built-in provider
+        const useFallback = tries >= 8 && this.fallbackProvider;
+        const r = useFallback ? this.fallbackProvider(hands, this.human, this.dealer)
+          : await this.contractProvider(hands, this.human, this.dealer, this.bidder);
+        if (r) { this.hands = r.hands; this.declareAuction = r.auction; this.beginPlay(r.contract); break; }
+        if (tries > 50) throw new Error('no playable deal found');
+      }
+    } else {
+      this.hands = deal(this.rand);
+      this.auction = newAuction(this.dealer); this.phase = 'auction';
+    }
+  }
+  async robotStepAsync() {
+    if (this.phase === 'auction') {
+      const seat = turn(this.auction);
+      return this.doCall(await this.bidder(this.hands[seat], this.auction, seat, { vul: this.vul, board: this.board }));
+    }
+    return this.doPlay(await this.player(this.play, { vul: this.vul, board: this.board }));
   }
   beginPlay(contract) { this.play = startPlay(contract, this.hands); this.phase = 'play'; }
   actor() { return this.phase === 'auction' ? turn(this.auction) : controller(this.play); }

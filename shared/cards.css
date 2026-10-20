@@ -18,3 +18,8 @@ a.back:hover { color: #fff; }
 .card .tl { top: calc(var(--cw) * .05); left: calc(var(--cw) * .07); }
 .card .br { bottom: calc(var(--cw) * .05); right: calc(var(--cw) * .07); transform: rotate(180deg); }
 .card .mid { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(var(--cw) * .6); }
+
+/* robot source chip (shared by games that can use the MCP robot server) */
+button.chip { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.25); color: #e6f2ea; border-color: rgba(255,255,255,.25); }
+button.chip[data-state="mcp"] { background: #1c6b3a; border-color: #7cf3a8; }
+button.chip[data-state="paused"] { background: #7a4a12; border-color: #ffd54a; }

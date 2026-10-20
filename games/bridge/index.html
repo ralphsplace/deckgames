@@ -48,6 +48,7 @@
   <header>
     <a class="back" href="../../">&larr; Games</a>
     <h1>Bridge</h1>
+    <button id="robots" class="chip" title="Robot source"></button>
     <select id="mode" title="Game mode">
       <option value="declare">Just declare</option>
       <option value="full">Bid &amp; play</option>
@@ -72,9 +73,8 @@ import { Table } from './engine/table.js';
 import { legalPlays } from './engine/play.js';
 import { isLegal, PASS, X, XX, bid, turn } from './engine/auction.js';
 import { SEATS, SYM, SEAT_NAME, same, side } from './engine/cards.js';
-import { pickContract } from './ai/contract.js';
-import { chooseCall } from './ai/bidder.js';
-import { choosePlay } from './ai/player.js';
+import { pickContract, pickContractAsync } from './ai/contract.js';
+import { createRobots, mountRobotChip } from '../../shared/robots/index.js';
 import { cardEl } from '../../shared/cardview.js';
 
 const $ = id => document.getElementById(id);
@@ -91,9 +91,24 @@ function loadTotals() {
   try { totals = { ...totals, ...JSON.parse(localStorage.getItem(KEY()) || '{}') }; } catch {}
 }
 const saveTotals = () => { try { localStorage.setItem(KEY(), JSON.stringify(totals)); } catch {} };
-function newTable() {
-  table = new Table({ mode, human: 'S', contractProvider: pickContract, bidder: chooseCall, player: choosePlay });
-  loadTotals();
+const robots = createRobots();      // MCP robot server if configured, else the built-in JS robots
+mountRobotChip($('robots'), robots);
+let loadId = 0;
+// Build a table (or deal the next board) and then start the robots. Robots may be remote, so this is async.
+async function loadBoard(fresh) {
+  const my = ++loadId; runId++; busy = true;
+  let t = table;
+  if (fresh) {
+    const meta = () => ({ vul: t && t.vul, board: t && t.board });
+    t = new Table({ mode, human: 'S', defer: true, contractProvider: pickContractAsync, fallbackProvider: pickContract,
+      bidder: (h, a, s) => robots.bridge.call(h, a, s, meta()), player: st => robots.bridge.play(st, meta()) });
+    $('alert').textContent = 'Dealing…';
+  }
+  await t.nextBoardAsync();
+  if (my !== loadId) return;
+  table = t; if (fresh) loadTotals();
+  $('alert').textContent = '';
+  run();
 }
 
 // ---------- hands and trick ----------
@@ -201,7 +216,7 @@ function renderStatus() {
   $('stats').textContent = `Hands: ${totals.hands} · Total: ${fmt(totals.total)}`;
   $('next').hidden = table.phase !== 'done' || busy;
 }
-function render() { settle(); SEATS.forEach(renderSeat); renderTrick(); renderAuction(); renderStatus(); }
+function render() { if (!table || !table.hands) return; settle(); SEATS.forEach(renderSeat); renderTrick(); renderAuction(); renderStatus(); }
 
 // ---------- flow ----------
 async function showEvent(ev) {
@@ -220,7 +235,9 @@ async function run() {
   while (me === runId && table.phase !== 'done' && !table.isHumanTurn()) {
     await sleep(table.phase === 'auction' ? 700 : 600);
     if (me !== runId || table.phase === 'done' || table.isHumanTurn()) break;
-    await showEvent(table.robotStep());
+    const ev = await table.robotStepAsync();
+    if (me !== runId) return;
+    await showEvent(ev);
   }
   if (me !== runId) return;
   busy = false; render();
@@ -237,15 +254,14 @@ async function onPlay(card) {
   await showEvent(table.humanPlay(card));
   run();
 }
-$('next').onclick = () => { if (busy) return; table.nextBoard(); $('alert').textContent = ''; run(); };
+$('next').onclick = () => { if (busy) return; loadBoard(false); };
 $('mode').value = mode;
 $('mode').onchange = e => {
   mode = e.target.value;
   try { localStorage.setItem('deckgames.bridge.mode', mode); } catch {}
-  newTable(); $('alert').textContent = ''; run();
+  loadBoard(true);
 };
-newTable();
-run();
+loadBoard(true);
 </script>
 </body>
 </html>

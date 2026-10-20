@@ -32,12 +32,21 @@ small/big three dragons, flowers, concealed, self-drawn, last tile, replacement 
 honors, four winds). Payments: self-draw, every opponent pays; by discard, the discarder pays. Not yet: robbing the kong,
 kong payments, seven pairs, multiple round winds. Robots only declare a win that meets the minimum.
 
+## Robots and MCP
+Every robot decision goes through `shared/robots/`: it asks an optional **MCP robot server** first and falls back to the
+built-in JS robots on any failure (unset, unreachable, slow, error, or an illegal answer). Set the server with the
+**Robots** chip in a game header or `?robots=<url>`. Contract: `docs/robot-mcp.md`. Reference stub:
+`node tools/mcp-stub/server.mjs`.
+
 ## Layout
 ```
 deckgames/
   index.html                  menu
   package.json                {"type":"module"} + test script
   shared/                     cards.css, cardview.js (draws a card), rng.js (seedable random)
+    robots/                   MCP client + fallback, bridge/mahjong adapters, header chip
+  tools/mcp-stub/             reference MCP robot server (stub)
+  docs/robot-mcp.md           MCP robot contract
   games/
     solitaire/index.html
     mahjong/
