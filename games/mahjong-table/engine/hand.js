@@ -44,16 +44,23 @@ export function isThirteenOrphans(tiles) {
 
 // Shanten = tiles away from ready (0 = ready, -1 = complete). k = melds already made.
 const memo = new Map();
-export function shanten(tiles, k = 0) {
-  const key = tiles.slice().sort().join('') + '|' + k;
+export function shanten(tiles, k = 0, pairs = false) {
+  const key = tiles.slice().sort().join('') + '|' + k + (pairs ? 'p' : '');
   let v = memo.get(key);
   if (v === undefined) {
-    v = Math.min(shantenRegular(toCounts(tiles), k), k === 0 ? shantenOrphans(toCounts(tiles)) : 9);
+    const c = toCounts(tiles);
+    v = Math.min(shantenRegular(c, k), k === 0 ? shantenOrphans(c) : 9, k === 0 && pairs ? shantenPairs(c) : 9);
     if (memo.size > 200000) memo.clear();
     memo.set(key, v);
   }
   return v;
 }
+function shantenPairs(c) {
+  let pr = 0, kinds = 0;
+  for (let i = 0; i < 34; i++) { if (c[i]) kinds++; if (c[i] >= 2) pr++; }
+  return 6 - pr + Math.max(0, 7 - kinds);
+}
+export const isSevenPairs = tiles => tiles.length === 14 && toCounts(tiles).every(n => n === 0 || n === 2);
 function shantenOrphans(c) {
   let kinds = 0, pair = 0;
   for (let i = 0; i < 34; i++) if (isTerminal(TYPES[i]) || isHonor(TYPES[i])) { if (c[i]) kinds++; if (c[i] >= 2) pair = 1; }
@@ -87,4 +94,4 @@ function shantenRegular(c, k) {
   dfs(0, 0, 0, false);
   return best;
 }
-export const isComplete = (tiles, k = 0) => shanten(tiles, k) === -1;
+export const isComplete = (tiles, k = 0, pairs = false) => shanten(tiles, k, pairs) === -1;

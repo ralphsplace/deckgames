@@ -9,7 +9,7 @@ Offline-first card and tile games, served as plain static files. No logins, no d
 | Bridge, "Bid & play" mode (you bid South against robots) | done, v1 |
 | Mahjong Solitaire (turtle layout, always-solvable deals) | done |
 | Mahjong Table: 4 players, you vs 3 robots, Hong Kong rules | done, v1 |
-| Mahjong Table: Riichi variant (to become the default) | planned |
+| Mahjong Table: Riichi variant (default) | done, v1 (branch `riichi-variant`) |
 
 ## Run it
 - **Docker (NAS):** `docker compose up -d`, then open `http://<host>:8080`
@@ -24,13 +24,17 @@ simulated auctions, all legal, calibrated against combined HCP), 100+ robot-play
 solvability of every deal.
 
 ## Mahjong Table
-One game with a selectable ruleset (the "Rules" box). Hong Kong is first; Riichi shares the same core (wall, draw/discard,
-claims, hand analysis, robots) and will be added as `engine/rules/riichi.js`, then made the default in
-`engine/rules/index.js`. Hong Kong v1: 144 tiles, flowers/seasons, 3-faan minimum, 10-faan limit, East round (extended
-when the dealer wins or the hand is drawn). Faans: common hand, all pungs, one-suit (mixed/pure), dragon and wind pungs,
-small/big three dragons, flowers, concealed, self-drawn, last tile, replacement tile, limit hands (thirteen orphans, all
-honors, four winds). Payments: self-draw, every opponent pays; by discard, the discarder pays. Not yet: robbing the kong,
-kong payments, seven pairs, multiple round winds. Robots only declare a win that meets the minimum.
+One game with a selectable ruleset (the "Rules" box): **Riichi** (default) and **Hong Kong**. Both share one core (wall,
+draw/discard, claims, hand analysis, robots); a variant is a file in `engine/rules/` registered in `engine/rules/index.js`.
+- **Riichi:** 136 tiles, riichi (with ippatsu), dora and ura dora, furiten, han/fu scoring with mangan to yakuman limits,
+  honba and riichi sticks, tenpai payments on a draw, East round. Yaku: riichi, tsumo, pinfu, tanyao, yakuhai, iipeikou,
+  ryanpeikou, sanshoku (both), ittsu, toitoi, sanankou, sankantsu, chiitoitsu, chanta, junchan, honitsu, chinitsu,
+  honroutou, shousangen, haitei/houtei, rinshan; yakuman: kokushi, suuankou, daisangen, tsuuiisou, chinroutou, ryuuiisou,
+  shousuushii, daisuushii. Not yet: red fives, double riichi, tenhou/chiihou, chankan, pao, abortive draws, chuuren.
+- **Hong Kong:** 144 tiles with flowers and seasons, 3-faan minimum, 10-faan limit. Faans: common hand, all pungs, one-suit,
+  dragon/wind pungs, three dragons, flowers, concealed, self-drawn, last tile, replacement tile, limit hands.
+  Not yet: robbing the kong, kong payments, seven pairs.
+- Robots only declare wins that are legal under the active ruleset; they declare riichi, play defensively against riichi.
 
 ## Layout
 ```
@@ -50,7 +54,7 @@ deckgames/
     mahjong-table/
       index.html              4-player table UI, claim buttons, results screen, variant selector
       engine/tiles.js hand.js round.js match.js   ruleset-agnostic core (shanten, claims, dealer rotation)
-      engine/rules/           hk.js (scoring + payments), index.js (variant registry, default)
+      engine/rules/           hk.js, riichi.js (yaku, fu, payments), index.js (variant registry, default)
       ai/robot.js             discards, claims, wins
       mahjong-table.test.js
     bridge/

@@ -10,7 +10,7 @@ export const hk = {
   bonusTiles: true,
   minScore: 3,        // minimum faan to declare a win
   limit: 10,
-  reserve: 14,        // dead wall left untouched
+  unit: 'faan',
   points: faan => TABLE[Math.min(faan, 10)] || 0,
 
   // ctx: { concealed (incl. winning tile), melds, bonus, wind, round, selfDraw, lastTile, replacement }
