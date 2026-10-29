@@ -258,11 +258,28 @@
     return { pile: p.dataset.pile, idx: p.classList.contains('card') ? +p.dataset.idx : -1 };
   }
 
+  // A double-click sends the card to a foundation. It is recognised from two clicks on the same card, because the
+  // first click redraws the board: the second lands on a new element, so the browser's own dblclick never fires.
+  const DBL_MS = 400;
+  let lastClick = null;
+  function toFoundation(pile, idx) {
+    const src = pile === 'waste' ? G.waste : G.tab[+pile[1]];
+    if (idx !== src.length - 1 || !src[idx].up) return false;          // only the top card of its pile
+    sel = { pile, idx: src.length - 1 };
+    for (let i = 0; i < 4; i++) if (tryMove('f' + i)) return true;
+    sel = null;
+    return false;
+  }
+
   board.addEventListener('click', e => {
     if (collecting) return;
     const t = target(e);
     if (!t) return;
     const { pile, idx } = t;
+    const now = Date.now();
+    const twice = lastClick && lastClick.pile === pile && lastClick.idx === idx && now - lastClick.t < DBL_MS;
+    lastClick = twice ? null : { pile, idx, t: now };
+    if (twice && (pile === 'waste' || pile[0] === 't') && toFoundation(pile, idx)) return;
     if (pile === 'stock') return drawFromStock();
     if (pile === 'waste') {
       if (!G.waste.length) return;
@@ -285,20 +302,6 @@
     }
     if (sel && sel.pile !== pile && tryMove(pile)) return;
     sel = (sel && sel.pile === pile && sel.idx === idx) ? null : { pile, idx };
-    render();
-  });
-
-  board.addEventListener('dblclick', e => {
-    if (collecting) return;
-    const t = target(e);
-    if (!t || (t.pile !== 'waste' && t.pile[0] !== 't')) return;
-    const src = t.pile === 'waste' ? G.waste : G.tab[+t.pile[1]];
-    if (!src.length) return;
-    const idx = src.length - 1;
-    if (!src[idx].up) return;
-    sel = { pile: t.pile, idx };
-    for (let i = 0; i < 4; i++) if (tryMove('f' + i)) return;
-    sel = null;
     render();
   });
 
