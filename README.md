@@ -4,7 +4,7 @@ Offline-first card and tile games, served as plain static files. No logins, no d
 
 | Game | Status |
 |---|---|
-| Solitaire (Klondike, draw 1 / 3) | done |
+| Solitaire (Klondike, draw 1 / 3; cards fly to the foundations by themselves once the stock and waste are empty) | done |
 | Bridge, "Just declare" mode (robots bid, you declare) | done, v1 |
 | Bridge, "Bid & play" mode (you bid South against robots) | done, v1 |
 | Mahjong Solitaire (turtle layout, always-solvable deals) | done |
