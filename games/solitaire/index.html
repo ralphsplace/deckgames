@@ -24,6 +24,8 @@
   #win.show { display: grid; }
   #win div { background: #fff; color: #0a3a20; padding: 28px 40px; border-radius: 12px; text-align: center; font-size: 22px; }
   #win button { margin-top: 14px; }
+  .card.flying { position: fixed; z-index: 20; margin: 0; pointer-events: none;
+                 transition: transform var(--fly-ms, 140ms) ease-in-out; }
 </style>
 </head>
 <body>
@@ -51,6 +53,9 @@
   const UP_OFF = 0.3, DOWN_OFF = 0.14;                                // tableau offsets, in card-widths
 
   let G, sel = null, history = [];
+  // auto collection: once the stock and waste are empty, cards that can go to a foundation fly there by themselves
+  const FLY_MS = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 140;
+  let collecting = false;                           // starts after a move of yours, so Undo doesn't restart it
 
   const board = document.getElementById('board');
   const piles = {};
@@ -81,7 +86,7 @@
       G.tab[c][c].up = true;
     }
     G.stock = deck;
-    sel = null; history = [];
+    sel = null; history = []; collecting = false;
     document.getElementById('win').classList.remove('show');
     render();
   }
@@ -90,7 +95,8 @@
   function undo() {
     if (!history.length) return;
     G = JSON.parse(history.pop());
-    sel = null;
+    sel = null; collecting = false;
+    document.querySelectorAll('.card.flying').forEach(e => e.remove());
     render();
   }
 
@@ -174,8 +180,60 @@
     G.moves++;
     sel = null;
     render();
-    if (G.found.every(f => f.length === 13)) document.getElementById('win').classList.add('show');
+    checkWin();
+    afterMove();
     return true;
+  }
+
+  const checkWin = () => { if (G.found.every(f => f.length === 13)) document.getElementById('win').classList.add('show'); };
+
+  // ---- auto collection ----
+  // the next card that can go to a foundation: the lowest rank among the tableau's face-up top cards (and the waste)
+  function nextToCollect() {
+    const tops = [];
+    if (G.waste.length) tops.push({ pile: 'waste', card: G.waste[G.waste.length - 1] });
+    G.tab.forEach((col, i) => { const c = col[col.length - 1]; if (c && c.up) tops.push({ pile: 't' + i, card: c }); });
+    tops.sort((a, b) => a.card.r - b.card.r);
+    for (const t of tops) {
+      const f = G.found.findIndex(fd => foundOK(t.card, fd));
+      if (f >= 0) return { pile: t.pile, f };
+    }
+    return null;
+  }
+
+  function afterMove() {
+    if (!collecting && !G.stock.length && !G.waste.length && nextToCollect()) {
+      collecting = true;
+      snap();                                   // one Undo takes back the whole collection
+      collectStep();
+    }
+  }
+
+  function collectStep() {
+    if (!collecting) return;
+    const m = nextToCollect();
+    if (!m) { collecting = false; checkWin(); return; }
+    const from = piles[m.pile].lastElementChild, to = piles['f' + m.f];
+    const done = () => {
+      if (!collecting) return;                  // Undo or New game while flying
+      const src = m.pile === 'waste' ? G.waste : G.tab[+m.pile[1]];
+      G.found[m.f].push(src.pop());
+      if (src.length) src[src.length - 1].up = true;
+      G.moves++;
+      render();
+      collectStep();
+    };
+    if (!FLY_MS || !from) return setTimeout(done, 0);
+    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+    const fly = from.cloneNode(true);
+    fly.classList.add('flying');
+    fly.style.cssText = `left:${a.left}px;top:${a.top}px;width:${a.width}px;height:${a.height}px;--fly-ms:${FLY_MS}ms`;
+    from.style.visibility = 'hidden';
+    document.body.appendChild(fly);
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fly.style.transform = `translate(${b.left - a.left}px, ${b.top - a.top}px)`;
+    }));
+    setTimeout(() => { fly.remove(); done(); }, FLY_MS + 30);
   }
 
   function drawFromStock() {
@@ -190,6 +248,7 @@
     G.moves++;
     sel = null;
     render();
+    afterMove();
   }
 
   // ---- input ----
@@ -199,10 +258,28 @@
     return { pile: p.dataset.pile, idx: p.classList.contains('card') ? +p.dataset.idx : -1 };
   }
 
+  // A double-click sends the card to a foundation. It is recognised from two clicks on the same card, because the
+  // first click redraws the board: the second lands on a new element, so the browser's own dblclick never fires.
+  const DBL_MS = 400;
+  let lastClick = null;
+  function toFoundation(pile, idx) {
+    const src = pile === 'waste' ? G.waste : G.tab[+pile[1]];
+    if (idx !== src.length - 1 || !src[idx].up) return false;          // only the top card of its pile
+    sel = { pile, idx: src.length - 1 };
+    for (let i = 0; i < 4; i++) if (tryMove('f' + i)) return true;
+    sel = null;
+    return false;
+  }
+
   board.addEventListener('click', e => {
+    if (collecting) return;
     const t = target(e);
     if (!t) return;
     const { pile, idx } = t;
+    const now = Date.now();
+    const twice = lastClick && lastClick.pile === pile && lastClick.idx === idx && now - lastClick.t < DBL_MS;
+    lastClick = twice ? null : { pile, idx, t: now };
+    if (twice && (pile === 'waste' || pile[0] === 't') && toFoundation(pile, idx)) return;
     if (pile === 'stock') return drawFromStock();
     if (pile === 'waste') {
       if (!G.waste.length) return;
@@ -220,24 +297,11 @@
     if (idx === -1) { if (sel) tryMove(pile); return; }
     const c = col[idx];
     if (!c.up) {
-      if (idx === col.length - 1) { snap(); c.up = true; G.moves++; sel = null; render(); }
+      if (idx === col.length - 1) { snap(); c.up = true; G.moves++; sel = null; render(); afterMove(); }
       return;
     }
     if (sel && sel.pile !== pile && tryMove(pile)) return;
     sel = (sel && sel.pile === pile && sel.idx === idx) ? null : { pile, idx };
-    render();
-  });
-
-  board.addEventListener('dblclick', e => {
-    const t = target(e);
-    if (!t || (t.pile !== 'waste' && t.pile[0] !== 't')) return;
-    const src = t.pile === 'waste' ? G.waste : G.tab[+t.pile[1]];
-    if (!src.length) return;
-    const idx = src.length - 1;
-    if (!src[idx].up) return;
-    sel = { pile: t.pile, idx };
-    for (let i = 0; i < 4; i++) if (tryMove('f' + i)) return;
-    sel = null;
     render();
   });
 
