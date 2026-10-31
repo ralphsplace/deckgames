@@ -15,7 +15,8 @@ Offline-first card and tile games, served as plain static files. No logins, no d
 - **Docker (NAS):** `docker compose up -d`, then open `http://<host>:8080`
 - **No Docker:** `python3 serve.py` (opens http://localhost:8080). Do not double-click the .html files: the bridge and
   mahjong pages use ES modules, which browsers block on `file://`.
-- **GitHub Pages:** push to `main`; `.github/workflows/pages.yml` runs the tests, then publishes the site.
+- **GitHub Pages:** push to `main`; `.github/workflows/pages.yml` runs the tests (on pull requests too), then publishes the site. `site.sh` lists the
+  files that make up the site, for Pages and the Docker image alike.
   All paths are relative, so it works under `https://<user>.github.io/<repo>/`.
 
 ## Test it
@@ -69,6 +70,7 @@ deckgames/
         contract.js           Just-declare provider: robots bid, deal is rotated so you declare
         player.js             heuristic card play
       engine.test.js  bidder.test.js
+  site.sh                    the files that make up the site (Pages and Docker)
   Dockerfile  docker-compose.yml  .dockerignore  serve.py
   .github/workflows/pages.yml  .nojekyll
 ```

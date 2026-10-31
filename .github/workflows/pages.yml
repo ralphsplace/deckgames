@@ -1,15 +1,11 @@
-name: Deploy to GitHub Pages
+name: Test, and deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,14 +16,23 @@ jobs:
       - run: node --test
   deploy:
     needs: test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Only the site goes out (the pages, the games and their shared code; no tests or repo files)
+        run: sh site.sh _site
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
-        with: { path: . }
+        with: { path: _site }
       - id: deployment
         uses: actions/deploy-pages@v4
