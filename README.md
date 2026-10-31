@@ -43,7 +43,10 @@ deckgames/
   package.json                {"type":"module"} + test script
   shared/                     cards.css, cardview.js (draws a card), rng.js (seedable random)
   games/
-    solitaire/index.html
+    solitaire/
+      index.html              board UI (draw 1 or 3, undo, double-click to a foundation, auto collection)
+      engine/game.js          Klondike rules, no DOM: deal, legal moves, draw, collection, win
+      solitaire.test.js
     mahjong/
       index.html              board UI (hint, undo, shuffle, restart deal, best time)
       faces.js                tile drawings as inline SVG (no fonts/images)

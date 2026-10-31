@@ -45,11 +45,13 @@
 </div>
 <div id="win"><div>You won!<br><button id="again">Play again</button></div></div>
 
-<script>
-(() => {
+<script type="module">
+import * as K from './engine/game.js';
+
+{
   const SUITS = ['\u2660', '\u2665', '\u2666', '\u2663'];           // spades, hearts, diamonds, clubs
   const RANKS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-  const isRed = c => c.s === 1 || c.s === 2;
+  const { isRed } = K;
   const UP_OFF = 0.3, DOWN_OFF = 0.14;                                // tableau offsets, in card-widths
 
   let G, sel = null, history = [];
@@ -74,18 +76,7 @@
   for (let i = 0; i < 7; i++) mkPile('t' + i, 'row2');
 
   function newGame() {
-    const deck = [];
-    for (let s = 0; s < 4; s++) for (let r = 1; r <= 13; r++) deck.push({ s, r, up: false });
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    G = { stock: [], waste: [], found: [[], [], [], []], tab: [[], [], [], [], [], [], []], moves: 0 };
-    for (let c = 0; c < 7; c++) {
-      for (let k = 0; k <= c; k++) G.tab[c].push(deck.pop());
-      G.tab[c][c].up = true;
-    }
-    G.stock = deck;
+    G = K.deal();
     sel = null; history = []; collecting = false;
     document.getElementById('win').classList.remove('show');
     render();
@@ -143,41 +134,11 @@
     document.getElementById('stats').textContent = `Moves: ${G.moves}`;
   }
 
-  // ---- rules ----
-  function foundOK(card, f) {
-    if (!f.length) return card.r === 1;
-    const t = f[f.length - 1];
-    return t.s === card.s && card.r === t.r + 1;
-  }
-  function tabOK(card, col) {
-    if (!col.length) return card.r === 13;
-    const t = col[col.length - 1];
-    return t.up && isRed(t) !== isRed(card) && t.r === card.r + 1;
-  }
-  function selCards() {
-    if (!sel) return [];
-    if (sel.pile === 'waste') return G.waste.slice(-1);
-    if (sel.pile[0] === 'f') { const f = G.found[+sel.pile[1]]; return f.slice(-1); }
-    return G.tab[+sel.pile[1]].slice(sel.idx);
-  }
+  // ---- moves (the rules are in engine/game.js) ----
   function tryMove(target) {
-    const cards = selCards();
-    if (!cards.length || target === sel.pile) return false;
-    const tn = +target[1];
-    if (target[0] === 't') { if (!tabOK(cards[0], G.tab[tn])) return false; }
-    else if (target[0] === 'f') { if (cards.length !== 1 || !foundOK(cards[0], G.found[tn])) return false; }
-    else return false;
+    if (!K.canMove(G, sel, target)) return false;
     snap();
-    // remove from source
-    if (sel.pile === 'waste') G.waste.pop();
-    else if (sel.pile[0] === 'f') G.found[+sel.pile[1]].pop();
-    else {
-      const src = G.tab[+sel.pile[1]];
-      src.splice(sel.idx);
-      if (src.length) src[src.length - 1].up = true;       // auto-flip
-    }
-    (target[0] === 't' ? G.tab[tn] : G.found[tn]).push(...cards);
-    G.moves++;
+    K.move(G, sel, target);
     sel = null;
     render();
     checkWin();
@@ -185,24 +146,11 @@
     return true;
   }
 
-  const checkWin = () => { if (G.found.every(f => f.length === 13)) document.getElementById('win').classList.add('show'); };
+  const checkWin = () => { if (K.won(G)) document.getElementById('win').classList.add('show'); };
 
   // ---- auto collection ----
-  // the next card that can go to a foundation: the lowest rank among the tableau's face-up top cards (and the waste)
-  function nextToCollect() {
-    const tops = [];
-    if (G.waste.length) tops.push({ pile: 'waste', card: G.waste[G.waste.length - 1] });
-    G.tab.forEach((col, i) => { const c = col[col.length - 1]; if (c && c.up) tops.push({ pile: 't' + i, card: c }); });
-    tops.sort((a, b) => a.card.r - b.card.r);
-    for (const t of tops) {
-      const f = G.found.findIndex(fd => foundOK(t.card, fd));
-      if (f >= 0) return { pile: t.pile, f };
-    }
-    return null;
-  }
-
   function afterMove() {
-    if (!collecting && !G.stock.length && !G.waste.length && nextToCollect()) {
+    if (!collecting && K.canCollect(G)) {
       collecting = true;
       snap();                                   // one Undo takes back the whole collection
       collectStep();
@@ -211,15 +159,12 @@
 
   function collectStep() {
     if (!collecting) return;
-    const m = nextToCollect();
+    const m = K.nextToCollect(G);
     if (!m) { collecting = false; checkWin(); return; }
     const from = piles[m.pile].lastElementChild, to = piles['f' + m.f];
     const done = () => {
       if (!collecting) return;                  // Undo or New game while flying
-      const src = m.pile === 'waste' ? G.waste : G.tab[+m.pile[1]];
-      G.found[m.f].push(src.pop());
-      if (src.length) src[src.length - 1].up = true;
-      G.moves++;
+      K.collect(G, m);
       render();
       collectStep();
     };
@@ -237,15 +182,8 @@
   }
 
   function drawFromStock() {
-    const n = +document.getElementById('draw').value;
-    if (G.stock.length) {
-      snap();
-      for (let i = 0; i < n && G.stock.length; i++) { const c = G.stock.pop(); c.up = true; G.waste.push(c); }
-    } else if (G.waste.length) {
-      snap();
-      while (G.waste.length) { const c = G.waste.pop(); c.up = false; G.stock.push(c); }
-    } else return;
-    G.moves++;
+    snap();
+    if (!K.draw(G, +document.getElementById('draw').value)) return void history.pop();   // nothing left to draw
     sel = null;
     render();
     afterMove();
@@ -263,8 +201,8 @@
   const DBL_MS = 400;
   let lastClick = null;
   function toFoundation(pile, idx) {
-    const src = pile === 'waste' ? G.waste : G.tab[+pile[1]];
-    if (idx !== src.length - 1 || !src[idx].up) return false;          // only the top card of its pile
+    const src = K.pileOf(G, pile);
+    if (idx < 0 || idx !== src.length - 1 || !src[idx].up) return false;   // only the top card (an empty pile has none)
     sel = { pile, idx: src.length - 1 };
     for (let i = 0; i < 4; i++) if (tryMove('f' + i)) return true;
     sel = null;
@@ -297,7 +235,7 @@
     if (idx === -1) { if (sel) tryMove(pile); return; }
     const c = col[idx];
     if (!c.up) {
-      if (idx === col.length - 1) { snap(); c.up = true; G.moves++; sel = null; render(); afterMove(); }
+      if (idx === col.length - 1) { snap(); K.flip(G, pile); sel = null; render(); afterMove(); }
       return;
     }
     if (sel && sel.pile !== pile && tryMove(pile)) return;
@@ -311,7 +249,7 @@
   document.getElementById('draw').onchange = newGame;
 
   newGame();
-})();
+}
 </script>
 </body>
 </html>
