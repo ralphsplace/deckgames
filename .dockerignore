@@ -7,3 +7,6 @@ README.md
 .github
 .nojekyll
 .git
+.claude
+CLAUDE.md
+docs/agents
