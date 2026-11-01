@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { deal, rng, hcp, SEATS } from './engine/cards.js';
+import { deal, rng, hcp, SEATS, face } from './engine/cards.js';
 import { newAuction, addCall, bid, PASS, X, isComplete, isLegal, contractOf } from './engine/auction.js';
 import { trickWinner } from './engine/play.js';
 import { score } from './engine/scoring.js';
@@ -79,4 +79,11 @@ test('full mode: robots bid, play, score, and move to the next board', () => {
   t.nextBoard();
   assert.equal(t.board, 2);
   assert.equal(t.phase, 'auction');
+});
+
+test('face: how a card is drawn (shared/cardview.js)', () => {
+  assert.deepEqual(face({ s: 'S', r: 14 }), { rank: 'A', suit: '♠', red: false });
+  assert.deepEqual(face({ s: 'D', r: 10 }), { rank: '10', suit: '♦', red: true });
+  assert.deepEqual(face({ s: 'H', r: 11 }), { rank: 'J', suit: '♥', red: true });
+  assert.equal(face(null), null);
 });

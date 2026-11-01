@@ -5,6 +5,10 @@
 // spades, hearts, diamonds, clubs; rank 1-13). A pile is named as the page names it: 'stock', 'waste', 'f0'-'f3',
 // 't0'-'t6'. A selection is { pile, idx }: the card at idx, and every card on top of it in a tableau pile.
 export const isRed = c => c.s === 1 || c.s === 2;
+const SUITS = ['\u2660', '\u2665', '\u2666', '\u2663'];
+const RANKS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+// how a card is drawn (shared/cardview.js): its face, or null while it's face down
+export const face = c => (c.up ? { rank: RANKS[c.r], suit: SUITS[c.s], red: isRed(c) } : null);
 
 // a new deal: 28 cards to the tableau (the top of each pile face up), the rest in the stock; `random` returns [0, 1)
 export function deal(random = Math.random) {
