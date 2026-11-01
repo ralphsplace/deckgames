@@ -47,11 +47,9 @@
 
 <script type="module">
 import * as K from './engine/game.js';
+import { cardEl as drawCard } from '../../shared/cardview.js';
 
 {
-  const SUITS = ['\u2660', '\u2665', '\u2666', '\u2663'];           // spades, hearts, diamonds, clubs
-  const RANKS = ['', 'A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
-  const { isRed } = K;
   const UP_OFF = 0.3, DOWN_OFF = 0.14;                                // tableau offsets, in card-widths
 
   let G, sel = null, history = [];
@@ -92,15 +90,11 @@ import * as K from './engine/game.js';
   }
 
   function cardEl(c, pile, idx, top, selected) {
-    const d = document.createElement('div');
-    d.className = 'card ' + (c.up ? 'up' + (isRed(c) ? ' red' : '') : 'down') + (selected ? ' sel' : '');
+    const d = drawCard(K.face(c));
+    if (selected) d.classList.add('sel');
     d.dataset.pile = pile;
     d.dataset.idx = idx;
     d.style.top = `calc(var(--cw) * ${top})`;
-    if (c.up) {
-      const corner = `${RANKS[c.r]}<br>${SUITS[c.s]}`;
-      d.innerHTML = `<span class="c tl">${corner}</span><span class="mid">${SUITS[c.s]}</span><span class="c br">${corner}</span>`;
-    }
     return d;
   }
 

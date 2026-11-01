@@ -9,6 +9,8 @@ export const partner = s => SEATS[(SEATS.indexOf(s) + 2) % 4];
 export const side = s => (s === 'N' || s === 'S' ? 'NS' : 'EW');
 export const same = (a, b) => a.s === b.s && a.r === b.r;
 export const rankLabel = r => (r <= 10 ? String(r) : 'JQKA'[r - 11]);
+// how a card is drawn (shared/cardview.js); null: face down
+export const face = c => c && { rank: rankLabel(c.r), suit: SYM[c.s], red: c.s === 'H' || c.s === 'D' };
 export const hcp = hand => hand.reduce((n, c) => n + Math.max(0, c.r - 10), 0);
 export const sortHand = h => h.sort((a, b) => SUITS.indexOf(a.s) - SUITS.indexOf(b.s) || b.r - a.r);
 

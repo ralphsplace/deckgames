@@ -71,11 +71,12 @@
 import { Table } from './engine/table.js';
 import { legalPlays } from './engine/play.js';
 import { isLegal, PASS, X, XX, bid, turn } from './engine/auction.js';
-import { SEATS, SYM, SEAT_NAME, same, side } from './engine/cards.js';
+import { SEATS, SYM, SEAT_NAME, face, same, side } from './engine/cards.js';
 import { pickContract } from './ai/contract.js';
 import { chooseCall } from './ai/bidder.js';
 import { choosePlay } from './ai/player.js';
-import { cardEl } from '../../shared/cardview.js';
+import { cardEl as drawCard } from '../../shared/cardview.js';
+const cardEl = c => drawCard(face(c));
 
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
