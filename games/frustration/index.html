@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frustration</title>
+<link rel="stylesheet" href="../../shared/cards.css">
+<style>
+  :root { --cw: clamp(44px, 9vw, 68px); --paper: #fbf9f1; --ink: #23262b; --rule: #b9c3cf; --gold: #ffd54a; }
+  #app { max-width: 1240px; margin: 0 auto; padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
+  header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  header h1 { font-size: 20px; margin: 0 auto 0 0; }
+  #stats { font-size: 14px; opacity: .9; }
+  #msg { min-height: 24px; font-size: 15px; margin: 2px 0 8px; }
+  #msg b { color: var(--gold); }
+  #msg.err { color: #ffb4a8; }
+
+  /* opponents */
+  #opps { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opp { background: rgba(0,0,0,.2); border-radius: 8px; padding: 6px 10px; font-size: 13px; min-width: 120px; }
+  .opp.turn { outline: 2px solid var(--gold); }
+  .opp b { font-size: 14px; }
+  .opp .backs { display: flex; margin-top: 4px; --cw: 16px; height: 24px; }
+  .opp .backs .card { position: relative; flex: none; margin-right: -11px; border-width: 1px; }
+  .opp .down { color: var(--gold); }
+
+  /* stock, discard, contract */
+  #mid { display: flex; align-items: center; gap: 14px; margin: 12px 0 26px; flex-wrap: wrap; }
+  .pile { position: relative; width: var(--cw); height: calc(var(--cw) * 1.4); border-radius: 6px; border: 2px dashed rgba(255,255,255,.3); }
+  .pile .card { top: 0; }
+  .pile.live { cursor: pointer; }
+  .pile.live .card { box-shadow: 0 0 0 3px var(--gold); }
+  .pile small { position: absolute; top: 100%; left: -10px; right: -10px; text-align: center; font-size: 11px; opacity: .75; margin-top: 5px; white-space: nowrap; }
+  #contract { margin-left: 8px; }
+  #contract .n { font-size: 13px; opacity: .8; }
+  #contract .t { font-size: 22px; }
+
+  /* melds on the table */
+  #table { display: grid; gap: 6px; min-height: 40px; }
+  .owner { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: rgba(0,0,0,.14); border-radius: 8px; padding: 6px 8px; }
+  .owner > small { width: 64px; font-size: 12px; opacity: .8; }
+  .meld { display: flex; --cw: min(6vw, 42px); padding: 3px; border-radius: 6px; }
+  .meld .card { position: relative; flex: none; margin-right: calc(var(--cw) * -.55); }
+  .meld .card:last-child { margin-right: 0; }
+  .meld.fit { background: rgba(255,213,74,.35); cursor: pointer; outline: 2px solid var(--gold); }
+  .empty { opacity: .6; font-size: 14px; padding: 4px 0; }
+
+  /* your side */
+  #staged { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; min-height: 0; }
+  #staged .meld { background: rgba(255,255,255,.12); }
+  #actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; min-height: 36px; }
+  #actions button:disabled { opacity: .35; cursor: default; }
+  #actions .go { background: var(--gold); border-color: #b8860b; font-weight: bold; }
+  #hand { display: flex; padding: 18px 0 8px calc(var(--cw) * .1); min-height: calc(var(--cw) * 1.4 + 28px); }
+  #hand .card { position: relative; flex: none; margin-right: calc(var(--cw) * -.3); cursor: pointer; transition: transform .08s; }
+  #hand .card:last-child { margin-right: 0; }
+  #hand .card.sel { transform: translateY(-14px); }
+  #hand .card.new { box-shadow: 0 0 0 2px #7fd1ff, 0 1px 3px rgba(0,0,0,.45); }
+  .card.wild::after { content: ''; position: absolute; right: 4px; top: 4px; width: 7px; height: 7px; border-radius: 50%; background: #d4a017; }
+  #you { display: flex; align-items: baseline; gap: 10px; font-size: 14px; }
+  #you.turn b { color: var(--gold); }
+
+  /* the score sheet, in the spirit of the typed paper one */
+  #sheet { background: var(--paper); color: var(--ink); border-radius: 4px; padding: 14px 12px 12px; align-self: start;
+           font-family: "Courier New", Courier, monospace; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
+  #sheet h2 { text-align: center; font-weight: normal; letter-spacing: .5em; font-size: 18px; margin: 0 0 10px;
+              text-decoration: underline; text-underline-offset: 4px; }
+  #sheet table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  #sheet th { font-weight: normal; text-align: left; padding: 2px 3px; border-bottom: 2px solid var(--ink); }
+  #sheet th.nm { text-align: center; border-left: 1px solid var(--ink); }
+  #sheet td { border-bottom: 1px solid var(--rule); padding: 3px 3px; white-space: nowrap; }
+  #sheet td.p { text-align: right; border-left: 1px solid var(--ink); width: 28px; }
+  #sheet td.t { text-align: right; width: 34px; border-left: 1px solid var(--rule); }
+  #sheet tr.now td { background: #fff3c4; }
+  #sheet tr.now td:first-child::before { content: '\25B8 '; }
+  #sheet tfoot td { border-top: 2px solid var(--ink); border-bottom: none; font-weight: bold; }
+  #sheet .notes { margin-top: 12px; font-size: 12.5px; line-height: 1.5; white-space: pre-line; }
+
+  #over { position: fixed; inset: 0; display: none; place-items: center; background: rgba(0,0,0,.6); z-index: 9999; overflow: auto; }
+  #over.show { display: grid; }
+  #over > div { background: #fff; color: #0a3a20; padding: 20px 28px; border-radius: 12px; max-width: 94vw; font-size: 16px; }
+  #over h2 { margin: 0 0 8px; }
+  #over table { border-collapse: collapse; margin: 8px 0 14px; }
+  #over td { padding: 3px 12px 3px 0; }
+  #over .left { display: flex; --cw: 34px; }
+  #over .left .card { position: relative; flex: none; margin-right: -14px; }
+
+  button:focus-visible, .pile:focus-visible, .meld:focus-visible, #hand .card:focus-visible { outline: 3px solid #7fd1ff; outline-offset: 2px; }
+  @media (max-width: 900px) { #app { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { #hand .card { transition: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="back" href="../../">&larr; Games</a>
+    <h1>Frustration</h1>
+    <label>Players <select id="players"></select></label>
+    <button id="new">New game</button>
+    <span id="stats"></span>
+  </header>
+  <main>
+    <div id="msg" role="status"></div>
+    <div id="opps"></div>
+    <div id="mid">
+      <div class="pile" id="stock" tabindex="0" aria-label="Draw from the stock"><small></small></div>
+      <div class="pile" id="disc" tabindex="0" aria-label="Take the top discard"><small>discard</small></div>
+      <div id="contract"><div class="n"></div><div class="t"></div></div>
+    </div>
+    <div id="table"></div>
+    <div id="staged"></div>
+    <div id="actions"></div>
+    <div id="you"></div>
+    <div id="hand"></div>
+  </main>
+  <aside id="sheet"></aside>
+</div>
+<div id="over"><div id="overbox"></div></div>
+
+<script type="module">
+import { Game } from './engine/game.js';
+import { DEFAULT_RULES } from './engine/rules.js';
+import { describe, parseContract } from './engine/contracts.js';
+import { sortCards, isWild, label, handPoints, face } from './engine/cards.js';
+import { makeMeld, extendMeld } from './engine/melds.js';
+import { RuleError } from './engine/round.js';
+import { plan } from './ai/planner.js';
+import { robotTurn } from './ai/robot.js';
+import { cardEl as drawCard } from '../../shared/cardview.js';
+const cardEl = c => drawCard(face(c));
+import { rng } from '../../shared/rng.js';
+
+const $ = id => document.getElementById(id);
+const qs = new URLSearchParams(location.search);
+const FAST = qs.has('fast');
+const sleep = ms => (FAST ? Promise.resolve() : new Promise(r => setTimeout(r, ms)));
+const KEY = 'deckgames.frustration.';
+const get = k => { try { return localStorage.getItem(KEY + k); } catch { return null; } };
+const put = (k, v) => { try { localStorage.setItem(KEY + k, v); } catch {} };
+const ROBOTS = ['Ada', 'Bert', 'Cora', 'Dex', 'Edie'];
+const rules = DEFAULT_RULES;
+
+let game, round, names = [], runId = 0, sel = new Set(), staged = [], sortBy = get('sort') || 'rank', lastDrawn = null;
+const stats = () => { try { return JSON.parse(get('stats')) || { games: 0, wins: 0, best: null }; } catch { return { games: 0, wins: 0, best: null }; } };
+const myTurn = () => round && round.phase !== 'over' && round.turn === 0;
+const me = () => round.players[0];
+const stagedIds = () => new Set(staged.flatMap(g => g.ids));
+const byId = id => me().hand.find(c => c.id === id);
+
+function say(html, err = false) { $('msg').innerHTML = html; $('msg').classList.toggle('err', err); }
+function card(c, extra = '') {
+  const d = cardEl(c);
+  if (c && !c.joker && isWild(c, rules)) d.classList.add('wild');      // jokers look wild already; mark the deuces
+  if (c) d.title = label(c);
+  if (extra) d.className += ' ' + extra;
+  return d;
+}
+function meldEl(m) {
+  const d = document.createElement('div'); d.className = 'meld';
+  for (const x of m.cells) {
+    const el = card(x.card);
+    if (isWild(x.card, rules)) el.title = `${label(x.card)}, played as ${m.type === 'book' ? 'a' : ''} ${x.as <= 10 ? x.as : 'JQKA'[x.as - 11]}${m.type === 'run' ? ' of ' + { S: 'spades', H: 'hearts', D: 'diamonds', C: 'clubs' }[m.suit] : ''}`;
+    d.appendChild(el);
+  }
+  return d;
+}
+
+// ---------- drawing the screen ----------
+function render() {
+  if (!round) return;
+  const st = stats();
+  $('stats').textContent = `Won ${st.wins} of ${st.games}` + (st.best != null ? `, best ${st.best}` : '');
+  // opponents
+  const opps = $('opps'); opps.innerHTML = '';
+  for (let s = 1; s < round.n; s++) {
+    const p = round.players[s], d = document.createElement('div');
+    d.className = 'opp' + (round.turn === s && round.phase !== 'over' ? ' turn' : '');
+    d.innerHTML = `<b>${names[s]}</b>${s === round.dealer ? ' (deals)' : ''}<br>${p.hand.length} cards · ${game.total(s)} pts${p.down ? ' · <span class="down">down</span>' : ''}`;
+    const backs = document.createElement('div'); backs.className = 'backs';
+    for (let i = 0; i < p.hand.length; i++) backs.appendChild(card(null));
+    d.appendChild(backs); opps.appendChild(d);
+  }
+  // piles
+  const canDraw = myTurn() && round.phase === 'draw';
+  const stock = $('stock'); stock.querySelectorAll('.card').forEach(e => e.remove());
+  if (round.stock.length) stock.prepend(card(null));
+  stock.querySelector('small').textContent = `stock ${round.stock.length}`;
+  stock.classList.toggle('live', canDraw);
+  const disc = $('disc'); disc.querySelectorAll('.card').forEach(e => e.remove());
+  if (round.top) disc.prepend(card(round.top));
+  disc.classList.toggle('live', canDraw && !!round.top);
+  $('contract').querySelector('.n').textContent = `Round ${game.index + 1} of ${game.contracts.length}`;
+  $('contract').querySelector('.t').textContent = describe(round.reqs);
+  // melds, grouped by who laid them
+  const tbl = $('table'); tbl.innerHTML = '';
+  const one = sel.size === 1 ? byId([...sel][0]) : null;
+  const canLayOff = myTurn() && round.phase === 'play' && me().down && one;
+  const owners = [...new Set(round.melds.map(m => m.owner))].sort((a, b) => a - b);
+  if (!owners.length) tbl.innerHTML = '<div class="empty">No one has laid down yet.</div>';
+  for (const o of owners) {
+    const row = document.createElement('div'); row.className = 'owner';
+    row.innerHTML = `<small>${names[o]}</small>`;
+    for (const m of round.melds.filter(x => x.owner === o)) {
+      const el = meldEl(m);
+      if (canLayOff && extendMeld(m, one, rules)) {
+        el.classList.add('fit'); el.tabIndex = 0; el.title = `Add ${label(one)} here`;
+        el.onclick = el.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter') return; act(() => round.layOff(0, one.id, m.id), `You add ${label(one)}.`); };
+      }
+      row.appendChild(el);
+    }
+    tbl.appendChild(row);
+  }
+  // staged groups
+  const sg = $('staged'); sg.innerHTML = '';
+  staged.forEach(g => { const el = meldEl(g.meld); el.title = `Staged ${g.type}`; sg.appendChild(el); });
+  // you
+  $('you').className = myTurn() ? 'turn' : '';
+  $('you').innerHTML = `<b>You</b>${round.dealer === 0 ? ' (deal)' : ''} · ${game.total(0)} pts${me().down ? ' · <span style="color:var(--gold)">down</span>' : ''} · <span style="opacity:.8">${handPoints(me().hand, rules)} in hand</span>`;
+  const hand = $('hand'); hand.innerHTML = '';
+  const hidden = stagedIds();
+  for (const c of sortCards(me().hand, rules, sortBy)) {
+    if (hidden.has(c.id)) continue;
+    const el = card(c, (sel.has(c.id) ? 'sel' : '') + (lastDrawn === c.id ? ' new' : ''));
+    el.tabIndex = 0;
+    el.onclick = el.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); sel.has(c.id) ? sel.delete(c.id) : sel.add(c.id); render(); };
+    hand.appendChild(el);
+  }
+  renderActions();
+  renderSheet();
+}
+
+function button(text, fn, { disabled = false, cls = '', title = '' } = {}) {
+  const b = document.createElement('button'); b.textContent = text; b.disabled = disabled;
+  if (cls) b.className = cls; if (title) b.title = title; b.onclick = fn; return b;
+}
+function renderActions() {
+  const box = $('actions'); box.innerHTML = '';
+  const play = myTurn() && round.phase === 'play', down = me().down;
+  const picked = [...sel].map(byId).filter(Boolean);
+  if (play && !down) {
+    box.append(
+      button('Make a book', () => stage('book'), { disabled: picked.length < 3 }),
+      button('Make a run', () => stage('run'), { disabled: picked.length < 3 }),
+      button('Lay down', layDown, { cls: 'go', disabled: !staged.length }),
+      button('Find my contract', hint, { title: 'Arrange your contract for you, if you have it' }));
+    if (staged.length) box.append(button('Undo groups', () => { staged = []; render(); }));
+  }
+  box.append(button('Discard', discard, { disabled: !play || picked.length !== 1, title: 'Pick one card, then discard it' }));
+  if (sel.size) box.append(button('Clear selection', () => { sel.clear(); render(); }));
+  box.append(button(sortBy === 'rank' ? 'Sort by suit' : 'Sort by rank', () => { sortBy = sortBy === 'rank' ? 'suit' : 'rank'; put('sort', sortBy); render(); }));
+}
+
+function renderSheet() {
+  const n = game.n, cur = game.index;
+  let h = `<h2>Frustration</h2><table><thead><tr><th>Rules</th>${names.map(x => `<th class="nm" colspan="2">${x}</th>`).join('')}</tr></thead><tbody>`;
+  game.contracts.forEach((c, i) => {
+    h += `<tr class="${i === cur && round.phase !== 'over' ? 'now' : ''}"><td>${i + 1}. ${c}</td>`;
+    for (let s = 0; s < n; s++) {
+      const done = i < game.sheet[s].length;
+      h += `<td class="p">${done ? game.sheet[s][i] : ''}</td><td class="t">${done ? game.total(s, i + 1) : ''}</td>`;
+    }
+    h += '</tr>';
+  });
+  h += `</tbody><tfoot><tr><td>Total</td>${names.map((_, s) => `<td class="t" colspan="2">${game.total(s)}</td>`).join('')}</tr></tfoot></table>`;
+  h += `<div class="notes">2 decks of cards
+10 cards per person
+
+duces &amp; jokers are wild cards
+ace is high only
+
+aces, duces &amp; jokers - 50 points
+ten to king - 10 points
+three to nine - 5 points
+
+Lowest total after 13 rounds wins.</div>`;
+  $('sheet').innerHTML = h;
+}
+
+// ---------- your moves ----------
+function act(fn, ok) {
+  try { fn(); } catch (e) { if (e instanceof RuleError) { say(e.message, true); return false; } throw e; }
+  sel.clear(); lastDrawn = null;
+  if (ok) say(ok);
+  render();
+  if (round.phase === 'over') finishRound();
+  return true;
+}
+function draw(from) {
+  if (!(myTurn() && round.phase === 'draw')) return;
+  if (from === 'discard' && !round.top) return;
+  const c = round.draw(0, from);
+  if (round.phase === 'over') { render(); finishRound(); return; }
+  lastDrawn = c.id; sel.clear();
+  say(me().down ? `You drew ${label(c)}. Pick a card and click a highlighted meld to add it, then discard.`
+                : `You drew ${label(c)}. Lay down your contract if you have it, then pick a card to discard.`);
+  render();
+}
+function stage(type) {
+  const cards = [...sel].map(byId);
+  const m = makeMeld(type, cards, rules);
+  if (!m) { say(type === 'book' ? 'A book is 3 or more cards of one rank (wilds can fill in).' : 'A run is 3 or more cards in a row, all one suit, ace high only (wilds can fill gaps).', true); return; }
+  staged.push({ type, ids: cards.map(c => c.id), meld: m }); sel.clear();
+  say(`Grouped as a ${type}. ${staged.length < round.reqs.length ? 'Make the next group, or lay down.' : 'Ready to lay down.'}`);
+  render();
+}
+function hint() {
+  const p = plan(me().hand, round.reqs, rules);
+  if (p.missing) { say(`Not yet: you're ${p.missing} card${p.missing > 1 ? 's' : ''} short of ${describe(round.reqs)}.`); return; }
+  staged = p.groups.map(g => ({ ...g, meld: makeMeld(g.type, g.ids.map(byId), rules) })); sel.clear();
+  say('Arranged. Check it, then press <b>Lay down</b>.'); render();
+}
+function layDown() {
+  const groups = staged.map(g => ({ type: g.type, ids: g.ids }));
+  if (act(() => round.layDown(0, groups), 'Your contract is down. Add more cards to any meld, then discard.')) staged = [];
+  render();
+}
+function discard() {
+  const c = byId([...sel][0]);
+  if (!c) return;
+  staged = [];
+  if (act(() => round.discard(0, c.id), `You discard ${label(c)}.`) && round.phase !== 'over') robots(runId);
+}
+
+// ---------- robots ----------
+async function robots(my) {
+  while (round.phase !== 'over' && round.turn !== 0) {
+    const s = round.turn;
+    render(); await sleep(350); if (my !== runId) return;
+    for (const step of robotTurn(round, s)) {
+      if (step.act === 'draw') say(`${names[s]} ${step.from === 'discard' ? `takes the ${label(step.card)}` : 'draws from the stock'}.`);
+      else if (step.act === 'down') say(`${names[s]} lays down the contract!`);
+      else if (step.act === 'layoff') say(`${names[s]} adds ${label(step.card)} to the table.`);
+      else say(`${names[s]} discards <b>${label(step.card)}</b>.`);
+      render(); await sleep(step.act === 'draw' ? 300 : 550); if (my !== runId) return;
+    }
+  }
+  if (round.phase === 'over') return finishRound();
+  say(`Your turn. Draw from the stock, or take the ${label(round.top)}.`);
+  render();
+}
+
+// ---------- round and game ends ----------
+function finishRound() {
+  const r = round.result;
+  const over = game.finish();
+  render();
+  const box = $('overbox');
+  let h = `<h2>${r.outBy === 0 ? 'You went out!' : r.outBy == null ? 'Round called' : names[r.outBy] + ' went out'}</h2>`;
+  if (r.outBy == null) h += '<p>The stock ran out, so everyone counts the cards they hold.</p>';
+  h += '<table>' + names.map((nm, s) => `<tr><td>${nm}</td><td>+${r.points[s]}</td><td>total ${game.total(s)}</td><td><div class="left" data-s="${s}"></div></td></tr>`).join('') + '</table>';
+  if (over) {
+    const lead = game.leaders(), t = game.totals();
+    h += `<p><b>${lead.includes(0) ? (lead.length > 1 ? 'You tie for the win!' : 'You win the game!') : lead.map(s => names[s]).join(' and ') + ' win' + (lead.length > 1 ? '' : 's') + ' the game.'}</b> Low score ${t[lead[0]]}.</p>`;
+    const st = stats(); st.games++; if (lead.includes(0)) st.wins++; st.best = st.best == null ? t[0] : Math.min(st.best, t[0]); put('stats', JSON.stringify(st));
+    h += '<button id="nextr">New game</button>';
+  } else h += `<p>Next: round ${game.index + 2}, ${describe(parseContract(game.contracts[game.index + 1]))}.</p><button id="nextr">Next round</button>`;
+  box.innerHTML = h;
+  box.querySelectorAll('.left').forEach(el => sortCards(round.players[+el.dataset.s].hand, rules).forEach(c => el.appendChild(card(c))));
+  $('over').classList.add('show');
+  $('nextr').focus();
+  $('nextr').onclick = () => { $('over').classList.remove('show'); over ? newGame() : nextRound(); };
+  render();
+}
+
+function nextRound() {
+  const my = ++runId;
+  round = game.next(); sel.clear(); staged = []; lastDrawn = null;
+  render();
+  if (round.turn === 0) { say(`Round ${game.index + 1}: ${describe(round.reqs)}. You start: draw from the stock or take the ${label(round.top)}.`); render(); }
+  else { say(`Round ${game.index + 1}: ${describe(round.reqs)}.`); robots(my); }
+}
+function newGame() {
+  runId++; $('over').classList.remove('show');
+  const n = +$('players').value;
+  names = ['You', ...ROBOTS.slice(0, n - 1)];
+  const seed = qs.has('seed') ? +qs.get('seed') : (Math.random() * 2 ** 31) | 0;
+  game = new Game(rules, { players: n, rand: rng(seed) });
+  nextRound();
+}
+
+// ---------- wiring ----------
+const ps = $('players');
+for (let n = 2; n <= 6; n++) ps.add(new Option(String(n), String(n)));
+ps.value = get('players') || '4';
+ps.onchange = () => { put('players', ps.value); newGame(); };
+$('new').onclick = newGame;
+$('stock').onclick = () => draw('stock');
+$('disc').onclick = () => draw('discard');
+for (const id of ['stock', 'disc']) $(id).onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(id).click(); } };
+window.__fr = { get round() { return round; }, get game() { return game; } };
+newGame();
+</script>
+</body>
+</html>
