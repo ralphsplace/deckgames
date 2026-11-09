@@ -121,3 +121,10 @@ test('collection: waits for the stock and waste to empty, takes the lowest card 
   assert.equal(steps, 8);
   assert.ok(K.won(G));
 });
+
+test('face: how a card is drawn, or null while face down', () => {
+  assert.deepEqual(K.face(C(1, 0)), { rank: 'A', suit: '♠', red: false });
+  assert.deepEqual(K.face(C(10, 2)), { rank: '10', suit: '♦', red: true });
+  assert.deepEqual(K.face(C(13, 1)), { rank: 'K', suit: '♥', red: true });
+  assert.equal(K.face(C(12, 3, false)), null);
+});
