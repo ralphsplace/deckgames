@@ -20,6 +20,22 @@ Offline-first card and tile games, served as plain static files. No logins, no d
   files that make up the site, for Pages and the Docker image alike.
   All paths are relative, so it works under `https://<user>.github.io/<repo>/`.
 
+## Guides
+Each game can have a how-to-play guide at `games/<game>/guide/` (Solitaire so far), linked from the game's header.
+The guide's pictures are real screenshots of the game, marked up with labels and arrows, and are made by a script, so
+they can be redone whenever the game changes:
+
+```
+npm install                      # once: the screenshot tool (Playwright)
+npx playwright install chromium  # once: the browser it drives
+npm run shots -- solitaire       # or several game names, or none for every game with a guide
+```
+
+What gets pictured lives beside the game in `games/<game>/guide.shots.js`: for each picture, the position to set up
+(played from a fixed seed with the game's own rules, so it's always a legal, repeatable position), the clicks to make,
+the labels and arrows to draw, and what to crop to. The tool is `tools/guide-shots/` (runner and markings), shared by
+every game; `shared/guide.css` styles every guide. A game opts in by exposing `window.deckgame.load(...)` for tools.
+
 ## Test it
 `node --test` from this folder (Node 18+). Covers bridge rules, scoring, auction legality, the bidding engine (1,500
 simulated auctions, all legal, calibrated against combined HCP), 100+ robot-played boards, and the mahjong rules and
@@ -59,6 +75,7 @@ deckgames/
   games/
     solitaire/
       index.html              board UI (draw 1 or 3, undo, double-click to a foundation, auto collection)
+      guide/                  how to play: index.html + img/ (made by guide.shots.js)
       engine/game.js          Klondike rules, no DOM: deal, legal moves, draw, collection, win
       solitaire.test.js
     frustration/
@@ -94,6 +111,8 @@ deckgames/
         contract.js           Just-declare provider: robots bid, deal is rotated so you declare
         player.js             heuristic card play
       engine.test.js  bidder.test.js
+  tools/guide-shots/         screenshot tool for the guides (shoot.mjs runner, overlay.js labels and arrows)
+  shared/guide.css           the look of every guide
   site.sh                    the files that make up the site (Pages and Docker)
   Dockerfile  docker-compose.yml  .dockerignore  serve.py
   .github/workflows/pages.yml  .nojekyll

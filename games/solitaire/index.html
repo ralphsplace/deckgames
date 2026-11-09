@@ -10,6 +10,8 @@
   header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
   header h1 { font-size: 20px; margin: 0 auto 0 0; letter-spacing: .5px; }
   #stats { font-size: 14px; opacity: .9; }
+  a.help { color: #cfe8d6; font-size: 14px; }
+  a.help:hover { color: #fff; }
   #board { display: grid; grid-template-columns: repeat(7, var(--cw)); gap: calc(var(--cw) * .12); justify-content: center; }
   .pile { position: relative; width: var(--cw); min-height: calc(var(--cw) * 1.4);
           border-radius: calc(var(--cw) * .08); background: rgba(0,0,0,.18); }
@@ -40,6 +42,7 @@
     </select>
     <button id="undo">Undo</button>
     <button id="new">New game</button>
+    <a class="help" href="guide/">How to play</a>
   </header>
   <div id="board"></div>
 </div>
@@ -241,6 +244,18 @@ import { cardEl as drawCard } from '../../shared/cardview.js';
   document.getElementById('new').onclick = newGame;
   document.getElementById('again').onclick = newGame;
   document.getElementById('draw').onchange = newGame;
+
+  // For tools (the guide's screenshots, browser tests): set up a position. state: a game from engine/game.js;
+  // draw: 1 or 3 (the setting, without starting a new game).
+  window.deckgame = {
+    load({ state, draw = 1 }) {
+      document.getElementById('draw').value = String(draw);
+      G = structuredClone(state); sel = null; history = []; collecting = false;
+      document.getElementById('win').classList.remove('show');
+      render();
+    },
+    get state() { return structuredClone(G); },
+  };
 
   newGame();
 }

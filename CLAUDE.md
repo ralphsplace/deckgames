@@ -11,7 +11,10 @@ GitHub Pages (`.github/workflows/pages.yml`).
 node --test          # every test (Node 18+): rules, scoring, bidding engine, robot play, mahjong solvability
 python3 serve.py     # http://localhost:8080 (ES modules don't load from file://)
 docker compose up -d # http://<host>:8080
+npm run shots -- <game>   # redo a guide's screenshots (needs npm install + npx playwright install chromium)
 ```
+
+After any change to a game's screen, rerun its guide shots and look at them: the pictures must match the game.
 
 ## Agent skills
 
