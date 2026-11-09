@@ -1,0 +1,6 @@
+# Keep LF line endings on every platform. Windows CRLF breaks shell scripts in the Linux build
+# ("set: illegal option -"), so git must not convert them on checkout.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
