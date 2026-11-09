@@ -1,6 +1,6 @@
 # deckgames
 
-Offline-first card and tile games (Solitaire, Bridge, Mahjong Solitaire, Mahjong Table), served as plain static
+Offline-first card and tile games (Solitaire, Bridge, Frustration, Mahjong Solitaire, Mahjong Table), served as plain static
 files: no logins, no network calls, no build step. Pages under `games/<game>/`, shared card code in `shared/`, game
 rules and robots as ES modules with their tests beside them. Runs from Docker (nginx), `python3 serve.py`, or
 GitHub Pages (`.github/workflows/pages.yml`).

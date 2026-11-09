@@ -7,6 +7,7 @@ Offline-first card and tile games, served as plain static files. No logins, no d
 | Solitaire (Klondike, draw 1 / 3; cards fly to the foundations by themselves once the stock and waste are empty) | done |
 | Bridge, "Just declare" mode (robots bid, you declare) | done, v1 |
 | Bridge, "Bid & play" mode (you bid South against robots) | done, v1 |
+| Frustration (contract rummy from the family score sheet: 13 contracts, 2 to 6 players, you vs robots) | done, v1 |
 | Mahjong Solitaire (turtle layout, always-solvable deals) | done |
 | Mahjong Table: 4 players, you vs 3 robots, Hong Kong rules | done, v1 |
 | Mahjong Table: Riichi variant (default) | done, v1 (branch `riichi-variant`) |
@@ -23,6 +24,18 @@ Offline-first card and tile games, served as plain static files. No logins, no d
 `node --test` from this folder (Node 18+). Covers bridge rules, scoring, auction legality, the bidding engine (1,500
 simulated auctions, all legal, calibrated against combined HCP), 100+ robot-played boards, and the mahjong rules and
 solvability of every deal.
+
+## Frustration
+Rules from the typed score sheet: 13 contracts of books and runs, 2 decks with jokers, 10 cards each, deuces and jokers
+wild, ace high only; cards left in hand score aces/deuces/jokers 50, ten to king 10, three to nine 5; lowest total wins.
+- The sheet's wording is the data: `engine/rules.js` lists the contracts as printed and `engine/contracts.js` parses them,
+  so editing a line there changes the game. (Contracts 5 and 9 are printed the same, Book of 4 + Run of 3.)
+- Not on the sheet, so set in `engine/rules.js` as common contract-rummy practice: each book/run needs a natural card;
+  you add to melds on the table only after your own contract is down; playing your last card goes out (no final
+  discard needed); the discards are reshuffled twice when the stock runs out, then the round is called and everyone
+  counts their hand. No buying out of turn, no swapping a natural for a wild on the table.
+- Robots (`ai/`) plan the contract from their hand (`planner.js`, also behind the page's "Find my contract" button),
+  take a discard only when it gets them closer, and throw their least connected, highest-scoring card.
 
 ## Mahjong Table
 One game with a selectable ruleset (the "Rules" box): **Riichi** (default) and **Hong Kong**. Both share one core (wall,
@@ -48,6 +61,14 @@ deckgames/
       index.html              board UI (draw 1 or 3, undo, double-click to a foundation, auto collection)
       engine/game.js          Klondike rules, no DOM: deal, legal moves, draw, collection, win
       solitaire.test.js
+    frustration/
+      index.html              table UI: opponents, stock/discard, melds by player, your hand, the score sheet
+      engine/rules.js         the sheet's house rules and contracts (as printed)
+      engine/contracts.js     contract wording -> requirements; does a lay-down meet it
+      engine/cards.js melds.js   two decks + jokers, points; books and runs with wilds, laying off
+      engine/round.js game.js    one contract's turns and scoring; 13 rounds and the running sheet
+      ai/planner.js robot.js     what the hand is missing; draw, lay down, lay off, discard
+      frustration.test.js
     mahjong/
       index.html              board UI (hint, undo, shuffle, restart deal, best time)
       faces.js                tile drawings as inline SVG (no fonts/images)
