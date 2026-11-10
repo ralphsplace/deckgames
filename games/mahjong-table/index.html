@@ -11,6 +11,7 @@
   header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
   header h1 { font-size: 20px; margin: 0 auto 0 0; }
   #info { font-size: 14px; opacity: .92; width: 100%; }
+  a.help { color: #cfe8d6; font-size: 14px; } a.help:hover { color: #fff; }
   #msg { min-height: 24px; font-size: 15px; margin: 4px 0; }
   #msg b { color: #ffd54a; }
   .tile { width: var(--tw); height: calc(var(--tw) * 1.3); border-radius: 5px; padding: 3px 4px; flex: none;
@@ -54,6 +55,7 @@
     <h1>Mahjong Table</h1>
     <label>Rules <select id="variant"></select></label>
     <button id="new">New match</button>
+    <a class="help" href="guide/">How to play</a>
     <div id="info"></div>
   </header>
   <div id="msg"></div>
@@ -191,10 +193,34 @@ async function humanTurn(my) {
   }
 }
 
+// For tools (the guide's screenshots, browser tests): ?hand=c1,c2,... sets your 13 starting tiles and ?draw=t your
+// first draw, in the first hand. Each tile is swapped in from the wall (or a robot's hand), so every count stays legal.
+function rig(r) {
+  const want = qs.get('hand')?.split(','), first = qs.get('draw');
+  const take = t => {
+    for (const from of [r.wall, ...[1, 2, 3].map(s => r.players[s].hand)]) {
+      const i = from.lastIndexOf(t); if (i >= 0) return from.splice(i, 1, null) && { from, i };
+    }
+    throw new Error('no ' + t + ' left to rig');
+  };
+  if (want) {
+    const mine = r.players[0].hand, keep = [], spare = [...mine];
+    for (const t of want) { const i = spare.indexOf(t); if (i >= 0) { keep.push(t); spare.splice(i, 1); } else keep.push(take(t)); }
+    // put the tiles given up where the wanted ones came from
+    for (let k = 0; k < keep.length; k++) if (typeof keep[k] === 'object') { const { from, i } = keep[k]; from[i] = spare.pop(); keep[k] = want[k]; }
+    r.players[0].hand = keep;
+  }
+  if (first) {
+    const at = r.wall.indexOf(first);
+    if (at < 0) { const { from, i } = take(first); from[i] = r.wall[0]; r.wall[0] = first; }
+    else [r.wall[0], r.wall[at]] = [r.wall[at], r.wall[0]];
+  }
+}
+
 async function playMatchHand() {
   const my = ++runId;
   round = match.next(); handNo++;
-  if (qs.get('rig') === 'riichi' && handNo === 1) round.players[0].hand = 'c1 c2 d4 d5 d6 b7 b8 b9 c5 c6 c7 d2 d2'.split(' ');   // test hook
+  if (handNo === 1) rig(round);
   render(); say(`New hand. You are ${WINDS[round.wind(0)]}.`);
   await sleep(500);
   while (round.phase !== 'over') {
@@ -285,7 +311,7 @@ sel.value = VARIANTS[saved] ? saved : DEFAULT_VARIANT;
 rules = VARIANTS[sel.value];
 sel.onchange = () => { set(KEY + 'variant', sel.value); rules = VARIANTS[sel.value]; newMatch(); };
 $('new').onclick = newMatch;
-window.__mj = { get round() { return round; }, get match() { return match; } };
+window.deckgame = { get round() { return round; }, get match() { return match; } };
 newMatch();
 </script>
 </body>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play Mahjong Solitaire</title>
+<link rel="stylesheet" href="../../../shared/guide.css">
+</head>
+<body>
+<!-- The pictures are made by `npm run shots -- mahjong` from ../guide.shots.js. Change the game, run it again. -->
+<header class="banner"><div class="in">
+  <nav><a href="../../../">&larr; All games</a><a href="../">Mahjong Solitaire</a></nav>
+  <h1>How to play Mahjong Solitaire</h1>
+  <p>A one-player puzzle with mahjong tiles: take matching pairs off the pile until the table is clear. Every deal can
+    be cleared.</p>
+  <a class="play" href="../">Play Mahjong Solitaire</a>
+</div></header>
+
+<main>
+  <nav class="toc" aria-label="On this page">
+    <a href="#free">Free tiles</a><a href="#match">Matching</a><a href="#flowers">Flowers and seasons</a>
+    <a href="#stuck">When you're stuck</a><a href="#buttons">Buttons</a><a href="#ref">Quick reference</a>
+  </nav>
+
+  <section id="free">
+    <h2>Free tiles</h2>
+    <p>144 tiles are stacked in the shape of a turtle. You can only take a tile that is <b>free</b>: nothing on top of
+      it, and nothing next to it on at least one side (left or right). Tiles that aren't free are shaded.</p>
+    <figure><img src="img/board.png" width="880" height="711" loading="lazy"
+      alt="The turtle of tiles: a free tile at the end of the top row, the single tile on top of the pile, and a shaded tile in the bottom row blocked on both sides"></figure>
+  </section>
+
+  <section id="match">
+    <h2>Matching</h2>
+    <p>Click a free tile, then a free tile that's the same. Both come off the table. Click a tile again to put it back.</p>
+    <figure><img src="img/match.png" width="880" height="672" loading="lazy"
+      alt="A red one-dot tile picked, with an arrow to the other free red one-dot tile"></figure>
+  </section>
+
+  <section id="flowers">
+    <h2>Flowers and seasons</h2>
+    <p>Everything matches only its exact twin, with two exceptions: <b>any flower matches any flower</b>, and
+      <b>any season matches any season</b>.</p>
+    <figure><img src="img/flowers.png" width="880" height="679" loading="lazy"
+      alt="Two different season tiles, both free, with an arrow between them: they match"></figure>
+  </section>
+
+  <section id="stuck">
+    <h2>When you're stuck</h2>
+    <p>Not sure what's left? <b>Hint</b> lights up a pair you can take.</p>
+    <figure><img src="img/hint.png" width="896" height="680" loading="lazy" alt="After pressing Hint, two matching free tiles are lit up"></figure>
+    <p>Take pairs carelessly and you can run out of moves. Then press <b>Shuffle</b>: the tiles still on the table are
+      dealt again into the same places, in an order that can always be cleared. Or use <b>Undo</b> to go back and try
+      different pairs.</p>
+    <figure><img src="img/stuck.png" width="894" height="712" loading="lazy"
+      alt="No more moves: fifty tiles left with no free pair, and the Shuffle button"></figure>
+  </section>
+
+  <section id="buttons">
+    <h2>Buttons</h2>
+    <figure><img src="img/toolbar.png" width="884" height="221" loading="lazy" alt="The buttons: Undo, Hint, Shuffle, Restart deal, New game, and the line of game stats"></figure>
+    <ul>
+      <li><b>Undo</b> puts the last pair back, as far back as you like.</li>
+      <li><b>Restart deal</b> starts this same deal over; <b>New game</b> deals a new one.</li>
+      <li>The line underneath shows tiles left, moves, shuffles, the deal number and the time. Your best time is kept
+        for games cleared without shuffling.</li>
+    </ul>
+    <figure class="narrow"><img src="img/won.png" width="451" height="119" loading="lazy" alt="Cleared in 7:42 with 0 shuffles. New best time! Play again"></figure>
+  </section>
+
+  <section id="ref">
+    <h2>Quick reference</h2>
+    <table class="ref">
+      <tr><th>Free tile</th><td>Nothing on top, and an open left or right side</td></tr>
+      <tr><th>A match</th><td>Two identical tiles; any two flowers; any two seasons</td></tr>
+      <tr><th>Stuck</th><td>Shuffle (always solvable) or Undo</td></tr>
+      <tr><th>Goal</th><td>Clear all 144 tiles</td></tr>
+    </table>
+    <p><a class="play" href="../">Play Mahjong Solitaire</a></p>
+  </section>
+</main>
+</body>
+</html>

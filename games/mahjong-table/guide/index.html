@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play Mahjong Table</title>
+<link rel="stylesheet" href="../../../shared/guide.css">
+</head>
+<body>
+<!-- The pictures are made by `npm run shots -- mahjong-table` from ../guide.shots.js. Change the game, run it again. -->
+<header class="banner"><div class="in">
+  <nav><a href="../../../">&larr; All games</a><a href="../">Mahjong Table</a></nav>
+  <h1>How to play Mahjong Table</h1>
+  <p>Four-player mahjong against three robots. Draw, throw out, and be first to build a winning hand.</p>
+  <a class="play" href="../">Play Mahjong Table</a>
+</div></header>
+
+<main>
+  <nav class="toc" aria-label="On this page">
+    <a href="#tiles">The tiles</a><a href="#goal">A winning hand</a><a href="#table">The table</a><a href="#turn">Your turn</a>
+    <a href="#claim">Claiming a discard</a><a href="#win">Winning</a><a href="#rules">Hong Kong or Riichi</a>
+    <a href="#riichi">Riichi</a><a href="#ref">Quick reference</a>
+  </nav>
+
+  <section id="tiles">
+    <h2>The tiles</h2>
+    <ul>
+      <li>Three suits numbered 1 to 9: <b>characters</b> (marked 萬), <b>dots</b> (circles) and <b>bamboo</b> (sticks; the
+        1 is a bird).</li>
+      <li><b>Winds</b> (E, S, W, N) and <b>dragons</b> (red, green, and white, shown as a blue frame).</li>
+      <li>Four of each. Hong Kong rules add <b>flowers and seasons</b>: bonus tiles that are put aside by themselves
+        (you get a replacement) and can add to your score.</li>
+    </ul>
+  </section>
+
+  <section id="goal">
+    <h2>A winning hand</h2>
+    <p>Fourteen tiles made of <b>four sets and a pair</b>. A set is:</p>
+    <ul>
+      <li>a <b>pung</b>: three the same,</li>
+      <li>a <b>chow</b>: three in a row in one suit (not winds or dragons),</li>
+      <li>or a <b>kong</b>: four the same (it counts as one set, and you draw an extra tile).</li>
+    </ul>
+    <figure><img src="img/win.png" width="988" height="290" loading="lazy"
+      alt="A winning hand: a pair of five-dots, a 1-2-3 of bamboo, and pungs of red, green and white dragons, with the Declare win button"></figure>
+    <p>The hand also has to score enough: 3 faan in Hong Kong rules, one yaku (scoring feature) in Riichi.</p>
+  </section>
+
+  <section id="table">
+    <h2>The table</h2>
+    <p>You're at the bottom; the robots sit Right, Across and Left. You see their sets once they've shown them, and
+      every tile thrown out, but not their hands.</p>
+    <figure><img src="img/table.png" width="988" height="635" loading="lazy"
+      alt="The table: the rules and wall count at the top, the three robots, the discards in the middle by player, and your hand at the bottom with the tile you just drew set apart"></figure>
+  </section>
+
+  <section id="turn">
+    <h2>Your turn</h2>
+    <p>You draw a tile automatically, then <b>click a tile to throw it out</b>. The one you just drew sits apart at the
+      right, so you can see what came in.</p>
+    <figure><img src="img/discard.png" width="988" height="188" loading="lazy" alt="Your fourteen tiles, the newly drawn one set apart, ready for you to click one to throw out"></figure>
+  </section>
+
+  <section id="claim">
+    <h2>Claiming a discard</h2>
+    <p>When a robot throws out a tile you can use, buttons appear. Take it to complete a set, which goes face up beside
+      your hand, then throw out a tile. Or <b>Pass</b>.</p>
+    <figure><img src="img/claim.png" width="988" height="391" loading="lazy"
+      alt="A robot's latest discard in the pool, and your Pung and Pass buttons"></figure>
+    <ul>
+      <li><b>Pung</b> or <b>Kong</b>: from anyone.</li>
+      <li><b>Chow</b>: only from the player just before you (on your left).</li>
+      <li><b>Win</b>: from anyone, if that tile completes your hand.</li>
+    </ul>
+    <p>A hand with no claimed sets is <b>concealed</b>, which is worth more.</p>
+  </section>
+
+  <section id="win">
+    <h2>Winning</h2>
+    <p>When the tile you draw completes your hand, a <b>Declare win</b> button shows what it's worth. When someone
+      else's discard completes it, the button says <b>Win!</b>. The hand ends and everyone's tiles are shown, with how
+      your score was made up.</p>
+    <figure><img src="img/win-result.png" width="402" height="647" loading="lazy"
+      alt="You win: self-drawn, 10 faan, 128 points, made up of three dragon pungs, Big three dragons, no flowers, concealed hand and self-drawn; every player's hand is shown with the points paid"></figure>
+    <p>If the wall runs out before anyone wins, the hand is a draw. A match is one round of hands (the East round);
+      scores carry from hand to hand.</p>
+  </section>
+
+  <section id="rules">
+    <h2>Hong Kong or Riichi</h2>
+    <figure><img src="img/rules.png" width="996" height="177" loading="lazy" alt="The Rules choice at the top, New match, and the information line"></figure>
+    <ul>
+      <li><b>Hong Kong</b>: 144 tiles with flowers and seasons; a winning hand needs 3 faan; scores are counted in faan.</li>
+      <li><b>Riichi</b> (Japanese): 136 tiles, no bonus tiles; a hand needs at least one yaku; scores in han and fu, with
+        dora (bonus tiles named by the indicator on the info line) and riichi.</li>
+    </ul>
+    <p>Changing the rules starts a new match.</p>
+  </section>
+
+  <section id="riichi">
+    <h2>Riichi (Riichi rules)</h2>
+    <p>When your hand is concealed and one tile from winning, you can declare <b>riichi</b>: you bet 1,000 points, and
+      your hand scores more if you win.</p>
+    <figure><img src="img/riichi.png" width="984" height="252" loading="lazy" alt="A concealed hand one tile from winning, and the Riichi button"></figure>
+    <p>Press Riichi, then throw out a gold-edged tile: those are the throws that keep you one away. From then on your
+      hand is locked: each turn you throw out what you draw, unless it wins.</p>
+    <figure><img src="img/riichi-discard.png" width="984" height="296" loading="lazy"
+      alt="After pressing Riichi: the drawn North wind has a gold edge, and a Cancel riichi button"></figure>
+    <p><b>Furiten</b>: if you've thrown out a tile that would complete your hand, you can't win on someone else's
+      discard; only by drawing it yourself. Your label shows "furiten" when this applies.</p>
+  </section>
+
+  <section id="ref">
+    <h2>Quick reference</h2>
+    <table class="ref">
+      <tr><th>Winning hand</th><td>Four sets (pung, chow, kong) + a pair, and enough score</td></tr>
+      <tr><th>Your turn</th><td>Draw (automatic), click a tile to throw it out</td></tr>
+      <tr><th>Pung, kong</th><td>Claim from anyone</td></tr>
+      <tr><th>Chow</th><td>Claim only from the player before you</td></tr>
+      <tr><th>Minimum score</th><td>Hong Kong 3 faan; Riichi one yaku</td></tr>
+      <tr><th>Riichi</th><td>Concealed and one away: bet 1,000, hand locks</td></tr>
+    </table>
+    <p><a class="play" href="../">Play Mahjong Table</a></p>
+  </section>
+</main>
+</body>
+</html>

@@ -11,6 +11,7 @@
   header { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   header h1 { font-size: 20px; margin: 0 auto 0 0; }
   #stats { font-size: 14px; opacity: .9; }
+  a.help { color: #cfe8d6; font-size: 14px; } a.help:hover { color: #fff; }
   #status { min-height: 44px; margin: 10px 0 12px; font-size: 15px; line-height: 1.4; }
   #tbl { display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: ". n ." "w c e" ". s .";
          gap: 14px; align-items: center; justify-items: center; }
@@ -54,6 +55,7 @@
     </select>
     <span id="stats"></span>
     <button id="next" hidden>Next hand</button>
+    <a class="help" href="guide/">How to play</a>
   </header>
   <div id="status"></div>
   <div id="bidpane">
@@ -76,10 +78,13 @@ import { pickContract } from './ai/contract.js';
 import { chooseCall } from './ai/bidder.js';
 import { choosePlay } from './ai/player.js';
 import { cardEl as drawCard } from '../../shared/cardview.js';
+import { rng } from '../../shared/rng.js';
 const cardEl = c => drawCard(face(c));
 
 const $ = id => document.getElementById(id);
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+const qs = new URLSearchParams(location.search);
+const FAST = qs.has('fast');                                   // no pauses (tools, tests)
+const sleep = ms => (FAST ? Promise.resolve() : new Promise(r => setTimeout(r, ms)));
 const fmt = n => (n > 0 ? '+' : '') + n;
 const contractText = c => `${c.level}${SYM[c.strain]}${'x'.repeat(c.dbl)} by ${SEAT_NAME[c.declarer]}`;
 const callText = c => c.type === 'bid' ? `${c.level}${SYM[c.strain]}` : c.type === 'pass' ? 'Pass' : c.type === 'x' ? 'X' : 'XX';
@@ -93,7 +98,8 @@ function loadTotals() {
 }
 const saveTotals = () => { try { localStorage.setItem(KEY(), JSON.stringify(totals)); } catch {} };
 function newTable() {
-  table = new Table({ mode, human: 'S', contractProvider: pickContract, bidder: chooseCall, player: choosePlay });
+  const rand = qs.has('seed') ? rng(+qs.get('seed')) : Math.random;       // ?seed=n: the same deals every time
+  table = new Table({ mode, human: 'S', rand, contractProvider: pickContract, bidder: chooseCall, player: choosePlay });
   loadTotals();
 }
 
@@ -245,6 +251,8 @@ $('mode').onchange = e => {
   try { localStorage.setItem('deckgames.bridge.mode', mode); } catch {}
   newTable(); $('alert').textContent = ''; run();
 };
+// For tools (the guide's screenshots, browser tests): the live table, and whether the robots are mid-move.
+window.deckgame = { get table() { return table; }, get busy() { return busy; } };
 newTable();
 run();
 </script>
