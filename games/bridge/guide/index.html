@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play Bridge</title>
+<link rel="stylesheet" href="../../../shared/guide.css">
+</head>
+<body>
+<!-- The pictures are made by `npm run shots -- bridge` from ../guide.shots.js. Change the game, run it again. -->
+<header class="banner"><div class="in">
+  <nav><a href="../../../">&larr; All games</a><a href="../">Bridge</a></nav>
+  <h1>How to play Bridge</h1>
+  <p>Four players, two partnerships, thirteen tricks. You sit South with a robot partner, against two robots.</p>
+  <a class="play" href="../">Play Bridge</a>
+</div></header>
+
+<main>
+  <nav class="toc" aria-label="On this page">
+    <a href="#modes">Two ways to play</a><a href="#table">The table</a><a href="#tricks">Tricks</a><a href="#play">Playing a card</a>
+    <a href="#score">The result</a><a href="#bid">Bidding</a><a href="#ref">Quick reference</a>
+  </nav>
+
+  <section id="modes">
+    <h2>Two ways to play</h2>
+    <figure><img src="img/toolbar.png" width="936" height="149" loading="lazy" alt="The bar at the top: the mode choice, hands played and total score, and How to play"></figure>
+    <ul>
+      <li><b>Just declare</b>: the robots do the bidding, and you always play the hand as declarer. The quickest way to
+        practise card play.</li>
+      <li><b>Bid and play</b>: you bid South's hand too, and play whatever the auction gives you: declarer, defender, or
+        sitting out as dummy.</li>
+    </ul>
+    <p>Each mode keeps its own count of hands and total score.</p>
+  </section>
+
+  <section id="table">
+    <h2>The table</h2>
+    <p>North and South are partners, against East and West. Once the bidding is over, the player who won the contract
+      for their side is the <b>declarer</b>. Their partner, the <b>dummy</b>, lays their cards face up after the first
+      card is led, and the declarer plays both hands.</p>
+    <figure><img src="img/table.png" width="928" height="734" loading="lazy"
+      alt="The table in Just declare: the contract above, North's dummy hand face up at the top, West and East as defenders, the first card of the trick in the middle, and your hand at the bottom"></figure>
+  </section>
+
+  <section id="tricks">
+    <h2>Tricks</h2>
+    <ul>
+      <li>Each player plays one card in turn, clockwise. The four cards are a <b>trick</b>.</li>
+      <li>You must <b>follow suit</b>: play the suit that was led if you have one. If you don't, play anything.</li>
+      <li>The highest card of the suit led wins, unless someone played a trump (the contract's suit). Then the highest
+        trump wins. In a notrump (NT) contract there are no trumps.</li>
+      <li>Whoever wins a trick leads to the next one.</li>
+    </ul>
+    <p>The contract says how many tricks the declarer's side must take: the number plus six. 1NT needs 7, 4♥ needs
+      10, 7♠ needs all 13.</p>
+  </section>
+
+  <section id="play">
+    <h2>Playing a card</h2>
+    <p>When it's your turn the cards you're allowed to play are bright; the rest are greyed. Click a bright card to play
+      it. On dummy's turn, you play from dummy the same way.</p>
+    <figure><img src="img/follow.png" width="570" height="472" loading="lazy"
+      alt="A heart was led: your hearts are bright and playable, every other card is greyed out"></figure>
+  </section>
+
+  <section id="score">
+    <h2>The result</h2>
+    <p>After all 13 tricks you see whether the contract made or went down, and what North-South scored. Make it and your
+      side scores; go down and the defenders score instead (more if you're vulnerable). Press <b>Next hand</b> to deal
+      again.</p>
+    <figure><img src="img/result.png" width="942" height="175" loading="lazy"
+      alt="After the hand: the contract went down one, North-South score minus 50, a Next hand button, and the running total"></figure>
+  </section>
+
+  <section id="bid">
+    <h2>Bidding (Bid and play)</h2>
+    <p>Before the play, the four players bid for the contract in turn, starting with the dealer. A bid is a number and a
+      suit (or NT): 1♣ is the lowest, then 1♦, 1♥, 1♠, 1NT, 2♣… up to 7NT. Each bid must be higher than the last.
+      You can also pass, double (X) an opponent's bid, or redouble (XX) a double. Three passes in a row end the
+      auction, and the last bid is the contract.</p>
+    <figure><img src="img/bidding.png" width="924" height="460" loading="lazy"
+      alt="Your call: the auction so far on the left, and the bidding box on the right, with calls that aren't allowed greyed out"></figure>
+    <p>The robots bid a standard system (two-over-one, five-card majors, 1NT shows 15 to 17 points). Bids with a dotted
+      underline have a meaning: click one to see it.</p>
+    <figure><img src="img/explain.png" width="932" height="443" loading="lazy"
+      alt="North's 1 club bid clicked, with its meaning shown underneath: 3 or more clubs, 12 to 21 points"></figure>
+  </section>
+
+  <section id="ref">
+    <h2>Quick reference</h2>
+    <table class="ref">
+      <tr><th>Tricks needed</th><td>The contract's number + 6</td></tr>
+      <tr><th>Follow suit</th><td>Always, if you can</td></tr>
+      <tr><th>Who wins a trick</th><td>Highest trump, else highest card of the suit led</td></tr>
+      <tr><th>Declarer</th><td>Plays both their own hand and the dummy</td></tr>
+      <tr><th>Auction ends</th><td>Three passes in a row after a bid</td></tr>
+      <tr><th>Bid meanings</th><td>Click a dotted bid</td></tr>
+    </table>
+    <p><a class="play" href="../">Play Bridge</a></p>
+  </section>
+</main>
+</body>
+</html>

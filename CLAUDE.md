@@ -14,7 +14,8 @@ docker compose up -d # http://<host>:8080
 npm run shots -- <game>   # redo a guide's screenshots (needs npm install + npx playwright install chromium)
 ```
 
-After any change to a game's screen, rerun its guide shots and look at them: the pictures must match the game.
+After any change to a game's screen, rerun its guide shots and look at them: the pictures must match the game, and no
+label may cover what it explains. A new game gets a guide too: `games/<game>/guide.shots.js` + `guide/index.html`.
 
 ## Agent skills
 

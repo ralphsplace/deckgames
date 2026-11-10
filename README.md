@@ -21,7 +21,7 @@ Offline-first card and tile games, served as plain static files. No logins, no d
   All paths are relative, so it works under `https://<user>.github.io/<repo>/`.
 
 ## Guides
-Each game can have a how-to-play guide at `games/<game>/guide/` (Solitaire so far), linked from the game's header.
+Every game has a how-to-play guide at `games/<game>/guide/`, linked from the game's header and its card on the menu.
 The guide's pictures are real screenshots of the game, marked up with labels and arrows, and are made by a script, so
 they can be redone whenever the game changes:
 
@@ -34,7 +34,13 @@ npm run shots -- solitaire       # or several game names, or none for every game
 What gets pictured lives beside the game in `games/<game>/guide.shots.js`: for each picture, the position to set up
 (played from a fixed seed with the game's own rules, so it's always a legal, repeatable position), the clicks to make,
 the labels and arrows to draw, and what to crop to. The tool is `tools/guide-shots/` (runner and markings), shared by
-every game; `shared/guide.css` styles every guide. A game opts in by exposing `window.deckgame.load(...)` for tools.
+every game; `shared/guide.css` styles every guide. The runner also writes each picture's size into the guide's `<img>`
+tags, and fails if a guide shows a picture no shot makes.
+
+Each game page exposes `window.deckgame` for tools (the shot lists, browser tests): the live game, and a way to set
+up or redraw a position. Bridge, Frustration, both Mahjongs take `?seed=n` (the same deals every time) and `?fast`
+(robots without pauses); Mahjong Table also takes `?hand=c1,c2,...` and `?draw=t` (your first hand and first draw,
+swapped in from the wall).
 
 ## Test it
 `node --test` from this folder (Node 18+). Covers bridge rules, scoring, auction legality, the bidding engine (1,500
@@ -80,6 +86,7 @@ deckgames/
       solitaire.test.js
     frustration/
       index.html              table UI: opponents, stock/discard, melds by player, your hand, the score sheet
+      guide/ guide.shots.js    how to play, and the list of its pictures
       engine/rules.js         the sheet's house rules and contracts (as printed)
       engine/contracts.js     contract wording -> requirements; does a lay-down meet it
       engine/cards.js melds.js   two decks + jokers, points; books and runs with wilds, laying off
@@ -88,6 +95,7 @@ deckgames/
       frustration.test.js
     mahjong/
       index.html              board UI (hint, undo, shuffle, restart deal, best time)
+      guide/ guide.shots.js    how to play, and the list of its pictures
       faces.js                tile drawings as inline SVG (no fonts/images)
       engine/layout.js        board layouts (turtle, 144 tiles)
       engine/tiles.js         tile set and matching rule
@@ -95,12 +103,14 @@ deckgames/
       mahjong.test.js
     mahjong-table/
       index.html              4-player table UI, claim buttons, results screen, variant selector
+      guide/ guide.shots.js    how to play, and the list of its pictures
       engine/tiles.js hand.js round.js match.js   ruleset-agnostic core (shanten, claims, dealer rotation)
       engine/rules/           hk.js, riichi.js (yaku, fu, payments), index.js (variant registry, default)
       ai/robot.js             discards, claims, wins
       mahjong-table.test.js
     bridge/
       index.html              table UI: mode switch, auction grid, bidding box, alerts on hover/click
+      guide/ guide.shots.js    how to play, and the list of its pictures
       engine/                 pure rules, no DOM: cards, auction, play, scoring, table (modes 'declare' and 'full')
       ai/
         bidder.js             entry point: (hand, auction, seat) => call

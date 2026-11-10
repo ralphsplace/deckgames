@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play Frustration</title>
+<link rel="stylesheet" href="../../../shared/guide.css">
+</head>
+<body>
+<!-- The pictures are made by `npm run shots -- frustration` from ../guide.shots.js. Change the game, run it again. -->
+<header class="banner"><div class="in">
+  <nav><a href="../../../">&larr; All games</a><a href="../">Frustration</a></nav>
+  <h1>How to play Frustration</h1>
+  <p>A rummy game in 13 rounds. Each round has a contract to collect, like "2 books of 3". Get it down, get rid of your
+    cards, and keep your score low.</p>
+  <a class="play" href="../">Play Frustration</a>
+</div></header>
+
+<main>
+  <nav class="toc" aria-label="On this page">
+    <a href="#table">The table</a><a href="#words">Books and runs</a><a href="#turn">Your turn</a>
+    <a href="#down">Laying down</a><a href="#wild">Wild cards</a><a href="#out">Going out</a><a href="#score">Scoring</a>
+    <a href="#contracts">The 13 contracts</a><a href="#extra">Rules not on the sheet</a><a href="#ref">Quick reference</a>
+  </nav>
+
+  <section id="table">
+    <h2>The table</h2>
+    <p>You play against one to five robots (pick the number under <b>Players</b>). It's two decks with their jokers,
+      10 cards each. The score sheet beside the table works like the paper one.</p>
+    <figure><img src="img/table.png" width="1040" height="659" loading="lazy"
+      alt="The Frustration table: three robots along the top, the stock and discard pile, this round's contract, your hand at the bottom, and the score sheet on the right"></figure>
+  </section>
+
+  <section id="words">
+    <h2>Books and runs</h2>
+    <ul>
+      <li>A <b>book</b> is three or more cards of the same rank, in any suits: 7♠ 7♥ 7♦.</li>
+      <li>A <b>run</b> is three or more cards in a row, all one suit: 5♥ 6♥ 7♥.</li>
+      <li>Ace is high only. Q-K-A is a run; A-2-3 is not, and runs don't go round the corner.</li>
+    </ul>
+  </section>
+
+  <section id="turn">
+    <h2>Your turn</h2>
+    <p>Every turn is: <b>draw one card</b>, then (if you can) <b>lay down</b> or <b>add to the table</b>, then
+      <b>discard one card</b>.</p>
+    <figure><img src="img/draw.png" width="593" height="244" loading="lazy"
+      alt="Your turn starts: the stock and the top discard are both highlighted, ready to draw from"></figure>
+    <figure><img src="img/discard.png" width="593" height="354" loading="lazy"
+      alt="One card picked from your hand, and the Discard button"></figure>
+    <p>The robots then take their turns, and the discard pile moves on round the table.</p>
+  </section>
+
+  <section id="down">
+    <h2>Laying down your contract</h2>
+    <p>When your hand holds this round's contract, put it on the table. Pick the cards for one group, say what they
+      make, then do the next group.</p>
+    <figure><img src="img/make-book.png" width="593" height="676" loading="lazy"
+      alt="Three sevens picked in your hand, and the Make a book button"></figure>
+    <p>Or press <b>Find my contract</b> and the game arranges it for you, if you have it (it tells you how many cards
+      you're short if you don't). Check it, then press <b>Lay down</b>. <b>Undo groups</b> starts over.</p>
+    <figure><img src="img/find.png" width="593" height="440" loading="lazy"
+      alt="Two books arranged above your hand after Find my contract, with the Lay down button"></figure>
+    <p>Groups can be longer than the contract asks: a book of 5 counts as a book of 3. You lay down once per round.</p>
+
+    <h3>Adding to the table</h3>
+    <p>Once your contract is down, you can add cards to <b>any</b> book or run on the table, yours or the robots'.
+      Pick a card and the melds it fits light up; click one.</p>
+    <figure><img src="img/down.png" width="593" height="485" loading="lazy"
+      alt="Your two books on the table; the seven of clubs picked in your hand, with an arrow to the book of sevens, which is lit up"></figure>
+  </section>
+
+  <section id="wild">
+    <h2>Wild cards</h2>
+    <p><b>2s and jokers are wild</b>: they stand in for any card you're missing. Each book or run still needs at least
+      one real card, so you can't lay down three wilds as a book.</p>
+    <figure><img src="img/wild.png" width="586" height="140" loading="lazy"
+      alt="Your two runs on the table: 5, 6 of hearts and a joker as the 7; 9, 10 of clubs and a 2 of diamonds as the jack"></figure>
+    <p>Wilds are worth holding on to, but they cost 50 points each if you're caught with them.</p>
+  </section>
+
+  <section id="out">
+    <h2>Going out</h2>
+    <p>The round ends the moment someone plays their last card, by discarding it or by adding it to the table. Everyone
+      else counts the cards left in their hand.</p>
+    <figure><img src="img/round-over.png" width="424" height="339" loading="lazy"
+      alt="Round over: You went out and score nothing; each robot's leftover cards and points are shown, and a Next round button"></figure>
+    <p>If the stock runs out, the discards are shuffled into a new stock. If that runs out twice, the round is called
+      and everyone counts what they hold.</p>
+  </section>
+
+  <section id="score">
+    <h2>Scoring</h2>
+    <table class="ref">
+      <tr><th>Ace, 2, joker</th><td>50 points each</td></tr>
+      <tr><th>10, J, Q, K</th><td>10 points each</td></tr>
+      <tr><th>3 to 9</th><td>5 points each</td></tr>
+      <tr><th>Going out</th><td>0</td></tr>
+    </table>
+    <p>The sheet keeps each round's points and a running total. <b>Lowest total after round 13 wins.</b></p>
+    <figure><img src="img/sheet.png" width="901" height="614" loading="lazy"
+      alt="The score sheet five rounds in: each player's points and running total for each round, round 6 highlighted, and the totals row"></figure>
+  </section>
+
+  <section id="contracts">
+    <h2>The 13 contracts</h2>
+    <p>Played in this order, as printed on the score sheet:</p>
+    <table class="ref">
+      <tr><th>1</th><td>2 books of 3</td></tr><tr><th>2</th><td>2 runs of 3</td></tr>
+      <tr><th>3</th><td>1 book of 3 + 1 run of 3</td></tr><tr><th>4</th><td>1 run of 4 + 1 book of 3</td></tr>
+      <tr><th>5</th><td>1 book of 4 + 1 run of 3</td></tr><tr><th>6</th><td>2 books of 4</td></tr>
+      <tr><th>7</th><td>2 runs of 4</td></tr><tr><th>8</th><td>1 run of 5 + 1 book of 3</td></tr>
+      <tr><th>9</th><td>1 book of 4 + 1 run of 3 (printed the same as 5)</td></tr><tr><th>10</th><td>3 books of 3</td></tr>
+      <tr><th>11</th><td>3 runs of 3</td></tr><tr><th>12</th><td>1 run of 7</td></tr><tr><th>13</th><td>1 book of 7</td></tr>
+    </table>
+  </section>
+
+  <section id="extra">
+    <h2>Rules not on the sheet</h2>
+    <p>The sheet doesn't say, so this version plays the common way:</p>
+    <ul>
+      <li>Each book or run needs at least one real (not wild) card.</li>
+      <li>You add to the table only after your own contract is down.</li>
+      <li>Playing your last card onto the table goes out; no final discard needed.</li>
+      <li>No buying discards out of turn, and no swapping a real card for a wild on the table.</li>
+      <li>The stock is rebuilt from the discards twice; after that the round is called.</li>
+    </ul>
+  </section>
+
+  <section id="ref">
+    <h2>Quick reference</h2>
+    <table class="ref">
+      <tr><th>Each turn</th><td>Draw (stock or top discard) → lay down / add to the table → discard</td></tr>
+      <tr><th>Book / run</th><td>3+ of a rank / 3+ in a row in one suit; ace high only</td></tr>
+      <tr><th>Wild</th><td>2s and jokers; at least one real card per group</td></tr>
+      <tr><th>Laying down</th><td>Once a round, exactly the contract's groups (longer is fine)</td></tr>
+      <tr><th>Round ends</th><td>When someone plays their last card</td></tr>
+      <tr><th>Winner</th><td>Lowest total after 13 rounds</td></tr>
+    </table>
+    <p><a class="play" href="../">Play Frustration</a></p>
+  </section>
+</main>
+</body>
+</html>

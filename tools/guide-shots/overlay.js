@@ -81,6 +81,9 @@ export function overlay(page, setClip) {
     async arrow(fromTarget, toTarget, { from = 'center', to = 'center', bend = 0.18 } = {}) {
       await page.evaluate(draw, { kind: 'arrow', a: await rectOf(page, fromTarget), b: await rectOf(page, toTarget), from, to, bend, gold: GOLD });
     },
+    // extra CSS for this picture only, e.g. more room around a crowded row so its labels don't cover anything.
+    // Call it before drawing marks: marks are placed where things are when they're drawn.
+    async style(css) { await page.addStyleTag({ content: css }); },
     // keep things out of the picture without moving anything else (e.g. a game's header in a board-only picture)
     async hide(selector) {
       await page.evaluate(sel => document.querySelectorAll(sel).forEach(e => { e.style.visibility = 'hidden'; }), selector);

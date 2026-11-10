@@ -10,9 +10,15 @@
   h1 { margin: 0 0 4px; font-size: 30px; }
   p.sub { margin: 0 0 24px; opacity: .8; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
-  .tile { display: block; padding: 20px; border-radius: 12px; background: rgba(0,0,0,.22); color: #fff;
-          text-decoration: none; border: 1px solid rgba(255,255,255,.15); }
-  a.tile:hover { background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.4); }
+  /* a tile is a card: its title link covers the whole card, and the guide link sits on top of that */
+  .tile { position: relative; display: flex; flex-direction: column; padding: 20px; border-radius: 12px;
+          background: rgba(0,0,0,.22); color: #fff; border: 1px solid rgba(255,255,255,.15); }
+  .tile:hover { background: rgba(0,0,0,.35); border-color: rgba(255,255,255,.4); }
+  .tile a.go { color: inherit; text-decoration: none; }
+  .tile a.go::after { content: ''; position: absolute; inset: 0; border-radius: 12px; }
+  .tile a.go:focus-visible::after { outline: 3px solid #ffd54a; }
+  .tile a.how { position: relative; z-index: 1; align-self: flex-start; margin-top: 12px; font-size: 14px; color: #cfe8d6; }
+  .tile a.how:hover { color: #fff; }
   .tile .icon { font-size: 40px; line-height: 1; }
   .tile h2 { margin: 10px 0 4px; font-size: 20px; }
   .tile p { margin: 0; font-size: 14px; opacity: .8; }
@@ -24,21 +30,26 @@
   <h1>Deck Games</h1>
   <p class="sub">Runs entirely on your own network. No logins, no daily limits.</p>
   <div class="grid">
-    <a class="tile" href="games/solitaire/">
-      <div class="icon">&#9824;</div><h2>Solitaire</h2><p>Classic Klondike, draw 1 or 3.</p>
-    </a>
-    <a class="tile" href="games/bridge/">
-      <div class="icon">&#9829;</div><h2>Bridge</h2><p>Play the hand as declarer, or bid and play against robots (2/1 system).</p>
-    </a>
-    <a class="tile" href="games/frustration/">
-      <div class="icon">&#9827;</div><h2>Frustration</h2><p>Thirteen contracts of books and runs, two decks, deuces and jokers wild. Lowest score wins.</p>
-    </a>
-    <a class="tile" href="games/mahjong/">
-      <div class="icon">&#9638;</div><h2>Mahjong Solitaire</h2><p>Clear the turtle. Every deal is solvable, with hint, undo and shuffle.</p>
-    </a>
-    <a class="tile" href="games/mahjong-table/">
-      <div class="icon">&#127019;</div><h2>Mahjong Table</h2><p>Four-player Mahjong against robots. Hong Kong rules first; more variants to come.</p>
-    </a>
+    <div class="tile">
+      <div class="icon">&#9824;</div><h2><a class="go" href="games/solitaire/">Solitaire</a></h2><p>Classic Klondike, draw 1 or 3.</p>
+      <a class="how" href="games/solitaire/guide/">How to play</a>
+    </div>
+    <div class="tile">
+      <div class="icon">&#9829;</div><h2><a class="go" href="games/bridge/">Bridge</a></h2><p>Play the hand as declarer, or bid and play against robots (2/1 system).</p>
+      <a class="how" href="games/bridge/guide/">How to play</a>
+    </div>
+    <div class="tile">
+      <div class="icon">&#9827;</div><h2><a class="go" href="games/frustration/">Frustration</a></h2><p>Thirteen contracts of books and runs, two decks, deuces and jokers wild. Lowest score wins.</p>
+      <a class="how" href="games/frustration/guide/">How to play</a>
+    </div>
+    <div class="tile">
+      <div class="icon">&#9638;</div><h2><a class="go" href="games/mahjong/">Mahjong Solitaire</a></h2><p>Clear the turtle. Every deal is solvable, with hint, undo and shuffle.</p>
+      <a class="how" href="games/mahjong/guide/">How to play</a>
+    </div>
+    <div class="tile">
+      <div class="icon">&#127019;</div><h2><a class="go" href="games/mahjong-table/">Mahjong Table</a></h2><p>Four-player Mahjong against robots, with Hong Kong or Riichi (Japanese) rules.</p>
+      <a class="how" href="games/mahjong-table/guide/">How to play</a>
+    </div>
   </div>
 </main>
 </body>

@@ -7,10 +7,11 @@
 <link rel="stylesheet" href="../../shared/cards.css">
 <style>
   :root { --cw: clamp(44px, 9vw, 68px); --paper: #fbf9f1; --ink: #23262b; --rule: #b9c3cf; --gold: #ffd54a; }
-  #app { max-width: 1240px; margin: 0 auto; padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; }
+  #app { max-width: 1240px; margin: 0 auto; padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, auto); gap: 14px; }
   header { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
   header h1 { font-size: 20px; margin: 0 auto 0 0; }
   #stats { font-size: 14px; opacity: .9; }
+  a.help { color: #cfe8d6; font-size: 14px; } a.help:hover { color: #fff; }
   #msg { min-height: 24px; font-size: 15px; margin: 2px 0 8px; }
   #msg b { color: var(--gold); }
   #msg.err { color: #ffb4a8; }
@@ -61,7 +62,9 @@
   #you.turn b { color: var(--gold); }
 
   /* the score sheet, in the spirit of the typed paper one */
+  /* grows to fit 3-digit totals for several players; past ~480px (5-6 players) it scrolls sideways rather than clip */
   #sheet { background: var(--paper); color: var(--ink); border-radius: 4px; padding: 14px 12px 12px; align-self: start;
+           max-width: 480px; overflow-x: auto;
            font-family: "Courier New", Courier, monospace; box-shadow: 0 2px 10px rgba(0,0,0,.35); }
   #sheet h2 { text-align: center; font-weight: normal; letter-spacing: .5em; font-size: 18px; margin: 0 0 10px;
               text-decoration: underline; text-underline-offset: 4px; }
@@ -98,6 +101,7 @@
     <label>Players <select id="players"></select></label>
     <button id="new">New game</button>
     <span id="stats"></span>
+    <a class="help" href="guide/">How to play</a>
   </header>
   <main>
     <div id="msg" role="status"></div>
@@ -221,6 +225,7 @@ function render() {
   for (const c of sortCards(me().hand, rules, sortBy)) {
     if (hidden.has(c.id)) continue;
     const el = card(c, (sel.has(c.id) ? 'sel' : '') + (lastDrawn === c.id ? ' new' : ''));
+    el.dataset.id = c.id;
     el.tabIndex = 0;
     el.onclick = el.onkeydown = e => { if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault(); sel.has(c.id) ? sel.delete(c.id) : sel.add(c.id); render(); };
     hand.appendChild(el);
@@ -387,7 +392,11 @@ $('new').onclick = newGame;
 $('stock').onclick = () => draw('stock');
 $('disc').onclick = () => draw('discard');
 for (const id of ['stock', 'disc']) $(id).onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $(id).click(); } };
-window.__fr = { get round() { return round; }, get game() { return game; } };
+// For tools (the guide's screenshots, browser tests): the live game, and a way to show it after changing it.
+window.deckgame = {
+  get game() { return game; }, get round() { return round; },
+  refresh(msg = '') { round = game.current; sel.clear(); staged = []; lastDrawn = null; $('over').classList.remove('show'); say(msg); render(); },
+};
 newGame();
 </script>
 </body>
