@@ -1,0 +1,51 @@
+/* How-to-play guides (games/<game>/guide/). A rule leaflet, like the one folded into a box of cards: paper and ink,
+   the table's green for the banner, and pictures of the game doing the explaining. */
+:root { --paper: #fbf9f1; --ink: #23262b; --soft: #5b6168; --rule: #ddd6c4; --felt: #0b6b3a; --gold: #ffd54a; }
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+body { margin: 0; color: var(--ink); font: 18px/1.6 Georgia, "Times New Roman", serif; }
+a { color: var(--felt); }
+a:focus-visible, .play:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+.banner { background: var(--felt); color: #fff; }
+.banner .in { max-width: 780px; margin: 0 auto; padding: 18px 16px 26px; }
+.banner nav { display: flex; gap: 18px; font-size: 15px; }
+.banner nav a { color: #cfe8d6; text-decoration: none; }
+.banner nav a:hover { color: #fff; }
+.banner h1 { font-size: 40px; line-height: 1.1; margin: 18px 0 6px; font-weight: normal; }
+.banner p { margin: 0 0 18px; font-size: 19px; opacity: .92; max-width: 34em; }
+.play { display: inline-block; background: var(--gold); color: #3a2a00; text-decoration: none; font-weight: bold;
+        padding: 10px 20px; border-radius: 999px; }
+.play:hover { background: #ffe07a; }
+
+main { max-width: 780px; margin: 0 auto; padding: 8px 16px 48px; }
+.toc { display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 14px 0; border-bottom: 1px solid var(--rule); font-size: 15px; }
+section { padding: 26px 0 8px; border-bottom: 1px solid var(--rule); }
+section:last-of-type { border-bottom: none; }
+h2 { font-size: 26px; font-weight: normal; margin: 0 0 8px; }
+h3 { font-size: 19px; margin: 22px 0 4px; }
+p, ul { margin: 0 0 12px; max-width: 36em; }
+li { margin-bottom: 4px; }
+figure { margin: 14px 0 18px; }
+figure img { display: block; width: 100%; height: auto; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.18); }
+figure.narrow img { max-width: 360px; }
+figcaption { font-size: 15px; color: var(--soft); margin-top: 6px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.pair figure { margin: 6px 0 12px; }
+.key { display: inline-block; padding: 0 7px; border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 5px;
+       background: #fff; font-size: 15px; }
+
+table.ref { border-collapse: collapse; width: 100%; font-size: 16px; margin: 8px 0 16px; }
+table.ref th, table.ref td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+table.ref th { width: 34%; font-weight: normal; color: var(--soft); }
+
+@media (max-width: 620px) {
+  body { font-size: 17px; }
+  .banner h1 { font-size: 32px; }
+  .pair { grid-template-columns: 1fr; }
+}
+@media print {
+  .banner { background: none; color: var(--ink); border-bottom: 2px solid var(--ink); }
+  .banner nav, .play, .toc { display: none; }
+  section { break-inside: avoid; }
+}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to play Solitaire</title>
+<link rel="stylesheet" href="../../../shared/guide.css">
+</head>
+<body>
+<!-- The pictures are made by `npm run shots -- solitaire` from ../guide.shots.js. Change the game, run it again. -->
+<header class="banner"><div class="in">
+  <nav><a href="../../../">&larr; All games</a><a href="../">Solitaire</a></nav>
+  <h1>How to play Solitaire</h1>
+  <p>Classic Klondike: sort a shuffled deck into four piles, one per suit, from ace up to king.</p>
+  <a class="play" href="../">Play Solitaire</a>
+</div></header>
+
+<main>
+  <nav class="toc" aria-label="On this page">
+    <a href="#table">The table</a><a href="#goal">The goal</a><a href="#move">Moving cards</a><a href="#stock">The stock</a>
+    <a href="#foundations">Foundations</a><a href="#finish">Finishing</a><a href="#buttons">Buttons</a><a href="#tips">Tips</a>
+    <a href="#ref">Quick reference</a>
+  </nav>
+
+  <section id="table">
+    <h2>The table</h2>
+    <p>Every game starts the same way: 28 cards dealt into seven piles with only the top card of each showing, and the
+      other 24 face down in the stock.</p>
+    <figure>
+      <img src="img/table.png" width="772" height="468" loading="lazy"
+           alt="The Solitaire table: stock and waste top left, four empty foundations top right, seven tableau piles below">
+    </figure>
+  </section>
+
+  <section id="goal">
+    <h2>The goal</h2>
+    <p>Get all 52 cards onto the foundations. Each foundation holds one suit, built from ace to king.</p>
+  </section>
+
+  <section id="move">
+    <h2>Moving cards</h2>
+    <p>Click a card to pick it up (it gets a yellow outline), then click where it should go. Click it again to put it
+      back down.</p>
+    <figure>
+      <img src="img/move-pick.png" width="773" height="397" loading="lazy"
+           alt="The black 4 is picked up; an arrow shows it going onto the red 5 in the last pile">
+    </figure>
+    <p>On the tableau, a card goes on one that is <b>one rank higher</b> and the <b>other colour</b>: a black 4 on a red
+      5, a red 9 on a black 10. When a move uncovers a face-down card, it turns over for you.</p>
+    <figure>
+      <img src="img/move-done.png" width="781" height="447" loading="lazy"
+           alt="After the move: the 4 sits on the 5, and the card that was under the 4 is now face up">
+    </figure>
+
+    <h3>Moving several cards at once</h3>
+    <p>Click the highest card of a run and the cards on top of it come along.</p>
+    <figure>
+      <img src="img/move-run.png" width="836" height="507" loading="lazy"
+           alt="The red 5 and black 4 are picked up together; an arrow takes them onto the black 6 in the first pile">
+    </figure>
+
+    <h3>Empty piles</h3>
+    <p>Only a king, or a run headed by a king, can go into an empty pile.</p>
+    <figure>
+      <img src="img/king.png" width="772" height="463" loading="lazy"
+           alt="An arrow takes the king of diamonds from the waste into the empty second pile">
+    </figure>
+  </section>
+
+  <section id="stock">
+    <h2>The stock and the waste</h2>
+    <p>Stuck? Click the stock to turn up a card onto the waste. The top card of the waste plays like any other.</p>
+    <figure>
+      <img src="img/stock.png" width="818" height="419" loading="lazy"
+           alt="The stock, and the ace of diamonds face up on the waste beside it">
+    </figure>
+    <div class="pair">
+      <figure>
+        <img src="img/draw3.png" width="772" height="419" loading="lazy"
+             alt="Draw 3: three cards fanned on the waste, the top one playable">
+        <figcaption><b>Draw 3</b> is harder: three cards come out each time, and only the top one plays.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/recycle.png" width="772" height="419" loading="lazy"
+             alt="An empty stock showing a circular arrow">
+        <figcaption>When the stock runs out, click it to turn the waste back over. You can go through it as often as you like.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="foundations">
+    <h2>Foundations</h2>
+    <p>Aces go up first, then the 2 of the same suit, and so on. Double-click a card to send it straight up, or pick it
+      up and click the foundation.</p>
+    <figure>
+      <img src="img/foundation.png" width="772" height="419" loading="lazy"
+           alt="An arrow takes the ace of diamonds from the tableau up to the first foundation">
+    </figure>
+    <p>Changed your mind? A foundation's top card can come back down to the tableau, the same way as any other move.</p>
+  </section>
+
+  <section id="finish">
+    <h2>Finishing</h2>
+    <p>Once the stock and waste are empty and every card is face up, the game is as good as won. Make one more move and
+      the rest of the cards fly up to the foundations by themselves.</p>
+    <figure>
+      <img src="img/finish.png" width="772" height="425" loading="lazy"
+           alt="Stock and waste empty, all cards face up; one move left, after which the cards go up on their own">
+    </figure>
+    <figure>
+      <img src="img/won.png" width="736" height="386" loading="lazy"
+           alt="All four foundations finished with kings, and a You won! message with a Play again button">
+    </figure>
+  </section>
+
+  <section id="buttons">
+    <h2>The buttons</h2>
+    <figure>
+      <img src="img/toolbar.png" width="776" height="156" loading="lazy"
+           alt="The bar at the top: move count, the Draw 1 or 3 choice, Undo, New game, and How to play">
+    </figure>
+    <ul>
+      <li><b>Draw 1 / Draw 3</b> sets how many cards the stock turns up. Changing it deals a new game.</li>
+      <li><b>Undo</b> takes back your last move, and keeps going back as far as you like. One Undo also takes back the
+        cards that flew up at the end.</li>
+      <li><b>New game</b> deals again.</li>
+      <li><b>Moves</b> counts your moves this game, cards drawn from the stock included.</li>
+    </ul>
+    <h3>On a phone or tablet</h3>
+    <p>Everything works by touch: tap instead of click, and double-tap to send a card to its foundation.</p>
+    <figure class="narrow">
+      <img src="img/phone.png" width="390" height="286" loading="lazy" alt="Solitaire on a phone-sized screen">
+    </figure>
+  </section>
+
+  <section id="tips">
+    <h2>Tips</h2>
+    <ul>
+      <li>Turning over face-down cards matters most. Work on the tallest piles first; they hide the most.</li>
+      <li>Don't empty a pile unless you have a king ready for it.</li>
+      <li>Don't rush cards up to the foundations. A low card on the tableau can still be a home for the next one down.</li>
+      <li>Look at the whole tableau before you draw from the stock.</li>
+    </ul>
+  </section>
+
+  <section id="ref">
+    <h2>Quick reference</h2>
+    <table class="ref">
+      <tr><th>Goal</th><td>All 52 cards on the foundations, each suit ace to king</td></tr>
+      <tr><th>Tableau</th><td>One lower, other colour; runs move together</td></tr>
+      <tr><th>Empty pile</th><td>King only</td></tr>
+      <tr><th>Stock</th><td>Click to draw 1 or 3; click the empty stock to start it over, as often as you like</td></tr>
+      <tr><th>Send a card up</th><td>Double-click it</td></tr>
+      <tr><th>Take a move back</th><td><span class="key">Undo</span>, as many times as you like</td></tr>
+    </table>
+    <p><a class="play" href="../">Play Solitaire</a></p>
+  </section>
+</main>
+</body>
+</html>
