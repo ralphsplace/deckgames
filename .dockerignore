@@ -5,7 +5,6 @@ docker-compose.yml
 serve.py
 README.md
 .github
-.nojekyll
 .git
 .claude
 CLAUDE.md
